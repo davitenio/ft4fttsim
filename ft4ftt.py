@@ -27,12 +27,20 @@ class Ethernet:
     MAX_FRAME_LENGTH = (PREAMBLE_LENGTH + SFD_LENGTH + 2 * MAC_ADDRESS_LENGTH +
         ETHERTYPE_LENGTH + MAX_PAYLOAD_LENGTH + FCS_LENGTH)
 
+class Link:
+    """ Class for links between slaves and switches, and for interlinks between
+    switches """
+    def __init__(self, name, propagation_time):
+        self.resource = Resource(1, name=name)
+        self.propagation_time = propagation_time
 
 
 class Slave(Process):
     """ Class for FTT slaves """
 
-    uplink0 = Resource(1, name="Uplink to switch 0")
+    def __init__(self):
+        Process.__init__(self)
+        self.uplink0 = Link(name="Uplink to switch 0", propagation_time=0)
 
     def order_message_transmissions(self, number):
         for i in range(number):
@@ -50,12 +58,11 @@ class Message(Process):
     def transmit(self, message, link):
         transmission_time = message.length
         print "{:7.2f} {:s}: waiting for transmission".format(now(), self.name)
-        yield request, self, link
+        yield request, self, link.resource
         print "{:7.2f} {:s}: transmission started".format(now(), self.name)
-        # for now we assume that propagation time is negligible in all links
-        propagation_time = 0
-        yield hold, self, transmission_time + propagation_time + Ethernet.IFG
-        yield release, self, link
+        yield hold, self, (transmission_time + link.propagation_time +
+            Ethernet.IFG)
+        yield release, self, link.resource
         print "{:7.2f} {:s}: transmission finished".format(now(), self.name)
 
 ## Experiment data -------------------------
