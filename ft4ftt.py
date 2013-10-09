@@ -1,4 +1,12 @@
 from SimPy.Simulation import *
+import logging
+
+class SimLoggerAdapter(logging.LoggerAdapter):
+    def process(self, log_msg, kwargs):
+        return "{:>8.2f}: {:s}".format(now(), log_msg), kwargs
+
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(message)s")
+log = SimLoggerAdapter(logging.getLogger('ft4fttsim'), {})
 
 ## Model components ------------------------
 
@@ -81,8 +89,8 @@ class Slave(Process):
             # sleep until a message is received on downlink0
             yield passivate, self
             received_message = self.downlink0.get_message()
-            print "{:7.2f} {:s}: received message {:s}".format(now(), self,
-                received_message)
+            log.info("{:s}: received message {:s}".format(self,
+                received_message))
             number = 2
             for message_count in range(number):
                 msg = Message()
@@ -116,16 +124,16 @@ class Master(Process):
             # number of trigger messages to transmit per elementary cycle
             num_trigger_messages=1):
         while True:
-            print "{:7.2f} ==== {:s}: EC {:d} ====".format(
-                now(), self, FTT.EC_count)
+            log.info("==== {:s}: EC {:d} ====".format(
+                self, FTT.EC_count))
             FTT.EC_count += 1
             time_last_EC_start = now()
             for message_count in range(num_trigger_messages):
                 for slave in Slave.slave_set:
                     trigger_msg = TriggerMessage()
                     trigger_msg.length = Ethernet.MAX_FRAME_LENGTH
-                    print "{:7.2f} {:s}: ordering transmission of {:s}".format(
-                        now(), self, trigger_msg)
+                    log.info("{:s}: instructing transmission of {:s}".format(
+                        self, trigger_msg))
                     activate(trigger_msg,
                         trigger_msg.transmit(slave.downlink0))
             while True:
@@ -133,8 +141,8 @@ class Master(Process):
                 delay_before_next_tx_order = float(FTT.EC_LENGTH -
                     time_since_EC_start)
                 if delay_before_next_tx_order > 0:
-                    print "{:7.2f} {:s}: sleeping for {:7.2f} time units".format(
-                        now(), self, delay_before_next_tx_order)
+                    log.info("{:s}: sleeping for {:7.2f} time units".format(
+                        self, delay_before_next_tx_order))
                     yield hold, self, delay_before_next_tx_order
                 else:
                     break
@@ -156,18 +164,18 @@ class Message(Process):
         self.name = "msg{:03d}".format(self.ID)
 
     def transmit(self, link):
-        print "{:7.2f} {link:s} {msg:s}: waiting for transmission".format(now(),
-            link=link, msg=self)
+        log.info("{link:s} {msg:s}: waiting for transmission".format(
+            link=link, msg=self))
         yield request, self, link.resource
-        print "{:7.2f} {link:s} {msg:s}: transmission started".format(now(),
-            link=link, msg=self)
+        log.info("{link:s} {msg:s}: transmission started".format(
+            link=link, msg=self))
         transmission_time = self.length
         link.put_message(self)
         yield hold, self, (transmission_time + link.propagation_time +
             Ethernet.IFG)
         yield release, self, link.resource
-        print "{:7.2f} {link:s} {msg:s}: transmission finished".format(now(),
-            link=link, msg=self)
+        log.info("{link:s} {msg:s}: transmission finished".format(
+            link=link, msg=self))
         reactivate(link.destination)
 
     def __str__(self):
