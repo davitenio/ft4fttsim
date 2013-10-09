@@ -191,18 +191,26 @@ class TriggerMessage(Message):
 
 
 
-## Experiment data -------------------------
+## Experiment configuration -------------------------
 
-simulation_time = Ethernet.MAX_FRAME_LENGTH * 20
+config = {
+    'simulation_time': Ethernet.MAX_FRAME_LENGTH * 11,
+    'num_slaves': 2,
+}
 
 ## Model/Experiment ------------------------------
+
+def create_slaves(number):
+    for i in range(number):
+        Slave()
 
 def main():
     initialize()
     master0 = Master()
-    slave0 = Slave()
-    activate(slave0, slave0.run(), at=0.0)
+    create_slaves(config['num_slaves'])
+    for slave in Slave.slave_set:
+        activate(slave, slave.run(), at=0.0)
     activate(master0, master0.run(), at=0.0)
-    simulate(until=simulation_time)
+    simulate(until=config['simulation_time'])
 
 if __name__ == '__main__': main()
