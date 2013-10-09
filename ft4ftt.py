@@ -29,53 +29,124 @@ class Ethernet:
 
 class Link:
     """ Class for links between slaves and switches, and for interlinks between
-    switches """
-    def __init__(self, name, propagation_time):
-        self.resource = Resource(1, name=name)
+    switches. Note that each link is unidirectional. """
+    def __init__(self, source, destination, propagation_time):
+        self.source = source
+        self.destination = destination
         self.propagation_time = propagation_time
+        self.name = "Link {:s}->{:s}".format(source, destination)
+        self.resource = Resource(1, name="resource for " + self.name)
+
+    def __str__(self):
+        return self.name
+
+
 
 
 class Slave(Process):
     """ Class for FTT slaves """
+    # set of all slave objects
+    slave_set = set()
+    # next available ID for slave objects
+    next_ID = 0
 
     def __init__(self):
         Process.__init__(self)
-        self.uplink0 = Link(name="Uplink to switch 0", propagation_time=0)
+        self.ID = Slave.next_ID
+        self.name = "slave{:d}".format(self.ID)
+        Slave.next_ID += 1
+        self.uplink0 = Link(self, Master.master_list[0], propagation_time=0)
+        self.downlink0 = Link(Master.master_list[0], self, propagation_time=0)
+        Slave.slave_set.add(self)
 
     def order_message_transmissions(self, number):
-        for i in range(number):
-            m = Message(name = "Message{:03d}".format(i,))
+        for message_count in range(number):
+            m = Message()
             m.length = Ethernet.MIN_FRAME_LENGTH
             # order the transmission of the message
             activate(m, m.transmit(m, self.uplink0))
-            # we wait zero units of time before we order the next transmission
+            # wait before we order the next transmission
             delay_before_next_tx_order = 0.0
             yield hold, self, delay_before_next_tx_order
 
+    def __str__(self):
+        return self.name
+
+
+
+class Master(Process):
+    """ Class for FTT masters """
+    # list of all of master objects
+    master_list = []
+    # next available ID for master objects
+    next_ID = 0
+
+    def __init__(self):
+        Process.__init__(self)
+        self.ID = Master.next_ID
+        Master.next_ID += 1
+        self.name = "master{:d}".format(self.ID)
+        Master.master_list.append(self)
+
+    def order_trigger_message_transmission(self, number):
+        for message_count in range(number):
+            for slave in Slave.slave_set:
+                m = Message()
+                m.length = Ethernet.MIN_FRAME_LENGTH
+                # order the transmission of the trigger message
+                activate(m, m.transmit(m, slave.downlink0))
+                delay_before_next_tx_order = 0.0
+                yield hold, self, delay_before_next_tx_order
+
+    def __str__(self):
+        return self.name
+
+
+
 class Message(Process):
     """ Class for messages sent by a slave """
+    # next available ID for message objects
+    next_ID = 0
+
+    def __init__(self):
+        Process.__init__(self)
+        self.ID = Message.next_ID
+        Message.next_ID += 1
+        self.name = "msg{:03d}".format(self.ID)
 
     def transmit(self, message, link):
         transmission_time = message.length
-        print "{:7.2f} {:s}: waiting for transmission".format(now(), self.name)
+        print "{:7.2f} {link:s} {msg:s}: waiting for transmission".format(now(),
+            link=link, msg=self)
         yield request, self, link.resource
-        print "{:7.2f} {:s}: transmission started".format(now(), self.name)
+        print "{:7.2f} {link:s} {msg:s}: transmission started".format(now(),
+            link=link, msg=self)
         yield hold, self, (transmission_time + link.propagation_time +
             Ethernet.IFG)
         yield release, self, link.resource
-        print "{:7.2f} {:s}: transmission finished".format(now(), self.name)
+        print "{:7.2f} {link:s} {msg:s}: transmission finished".format(now(),
+            link=link, msg=self)
+
+    def __str__(self):
+        return self.name
+
+
 
 ## Experiment data -------------------------
 
 maxNumber = 5
-maxTime = Ethernet.MAX_FRAME_LENGTH * 100
+simulation_time = Ethernet.MAX_FRAME_LENGTH * 100
 
 ## Model/Experiment ------------------------------
 
 def main():
     initialize()
-    s = Slave()
-    activate(s, s.order_message_transmissions(number=maxNumber), at=0.0)
-    simulate(until=maxTime)
+    master0 = Master()
+    slave0 = Slave()
+    activate(slave0, slave0.order_message_transmissions(number=maxNumber),
+        at=0.0)
+    activate(master0,
+        master0.order_trigger_message_transmission(number=maxNumber), at=0.0)
+    simulate(until=simulation_time)
 
 if __name__ == '__main__': main()
