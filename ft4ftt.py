@@ -30,6 +30,8 @@ class Ethernet:
 
 class FTT:
     EC_LENGTH = Ethernet.MAX_FRAME_LENGTH * 10
+    # This counter is incremented after each successive elementary cycle
+    EC_count = 0
 
 
 class Link:
@@ -75,20 +77,21 @@ class Slave(Process):
         Slave.slave_set.add(self)
 
     def run(self):
-        # sleep until a message is received on downlink0
-        yield passivate, self
-        received_message = self.downlink0.get_message()
-        print "{:7.2f} {:s}: received message {:s}".format(now(), self,
-            received_message)
-        number = 2
-        for message_count in range(number):
-            msg = Message()
-            msg.length = Ethernet.MIN_FRAME_LENGTH
-            # order the transmission of the message
-            activate(msg, msg.transmit(self.uplink0))
-            # wait before we order the next transmission
-            delay_before_next_tx_order = 0.0
-            yield hold, self, delay_before_next_tx_order
+        while True:
+            # sleep until a message is received on downlink0
+            yield passivate, self
+            received_message = self.downlink0.get_message()
+            print "{:7.2f} {:s}: received message {:s}".format(now(), self,
+                received_message)
+            number = 2
+            for message_count in range(number):
+                msg = Message()
+                msg.length = Ethernet.MAX_FRAME_LENGTH
+                # order the transmission of the message
+                activate(msg, msg.transmit(self.uplink0))
+                # wait before we order the next transmission
+                delay_before_next_tx_order = 0.0
+                yield hold, self, delay_before_next_tx_order
 
     def __str__(self):
         return self.name
@@ -112,15 +115,29 @@ class Master(Process):
     def run(self,
             # number of trigger messages to transmit per elementary cycle
             num_trigger_messages=1):
-        for message_count in range(num_trigger_messages):
-            for slave in Slave.slave_set:
-                trigger_msg = TriggerMessage()
-                trigger_msg.length = Ethernet.MIN_FRAME_LENGTH
-                # order the transmission of the trigger message
-                activate(trigger_msg,
-                    trigger_msg.transmit(slave.downlink0))
-                delay_before_next_tx_order = 0.0
-                yield hold, self, delay_before_next_tx_order
+        while True:
+            print "{:7.2f} ==== {:s}: EC {:d} ====".format(
+                now(), self, FTT.EC_count)
+            FTT.EC_count += 1
+            time_last_EC_start = now()
+            for message_count in range(num_trigger_messages):
+                for slave in Slave.slave_set:
+                    trigger_msg = TriggerMessage()
+                    trigger_msg.length = Ethernet.MAX_FRAME_LENGTH
+                    print "{:7.2f} {:s}: ordering transmission of {:s}".format(
+                        now(), self, trigger_msg)
+                    activate(trigger_msg,
+                        trigger_msg.transmit(slave.downlink0))
+            while True:
+                time_since_EC_start = now() - time_last_EC_start
+                delay_before_next_tx_order = float(FTT.EC_LENGTH -
+                    time_since_EC_start)
+                if delay_before_next_tx_order > 0:
+                    print "{:7.2f} {:s}: sleeping for {:7.2f} time units".format(
+                        now(), self, delay_before_next_tx_order)
+                    yield hold, self, delay_before_next_tx_order
+                else:
+                    break
 
     def __str__(self):
         return self.name
@@ -168,7 +185,7 @@ class TriggerMessage(Message):
 
 ## Experiment data -------------------------
 
-simulation_time = Ethernet.MAX_FRAME_LENGTH * 100
+simulation_time = Ethernet.MAX_FRAME_LENGTH * 20
 
 ## Model/Experiment ------------------------------
 
