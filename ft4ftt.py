@@ -45,11 +45,11 @@ class FTT:
 class Link:
     """ Class for links between slaves and switches, and for interlinks between
     switches. Note that each link is unidirectional. """
-    def __init__(self, source, destination, propagation_time):
-        self.source = source
-        self.destination = destination
+    def __init__(self, start_point, end_point, propagation_time):
+        self.start_point = start_point
+        self.end_point = end_point
         self.propagation_time = propagation_time
-        self.name = "Link {:s}->{:s}".format(source, destination)
+        self.name = "Link {:s}->{:s}".format(start_point, end_point)
         self.resource = Resource(1, name="resource for " + self.name)
         # message that is being transmitted in the link
         self.message = None
@@ -75,13 +75,18 @@ class Slave(Process):
     # next available ID for slave objects
     next_ID = 0
 
-    def __init__(self):
+    def __init__(self,
+            # list of switches to which the slave is connected
+            adjacent_switches):
         Process.__init__(self)
         self.ID = Slave.next_ID
         self.name = "slave{:d}".format(self.ID)
         Slave.next_ID += 1
-        self.uplink0 = Link(self, Master.master_list[0], propagation_time=0)
-        self.downlink0 = Link(Master.master_list[0], self, propagation_time=0)
+        self.uplinks = []
+        self.downlinks = []
+        for switch in adjacent_switches:
+            self.uplinks.append(Link(self, switch, propagation_time=0))
+            self.downlinks.append(Link(self, switch, propagation_time=0))
         Slave.slave_set.add(self)
 
     def run(self):
@@ -107,6 +112,30 @@ class Slave(Process):
 
 
 
+class Switch(Process):
+    """ Class for ethernet switches """
+    # list of all switch objects
+    switch_list = []
+    # next available ID for switch objects
+    next_ID = 0
+
+    def __init__(self):
+        Process.__init__(self)
+        self.ID = Switch.next_ID
+        Switch.next_ID += 1
+        self.name = "switch{:d}".format(self.ID)
+        Switch.switch_list.append(self)
+
+    def run(self):
+        while True:
+            # sleep until a message is received
+            yield passivate, self
+            # TODO: implement switching
+
+    def __str__(self):
+        return self.name
+
+
 class Master(Process):
     """ Class for FTT masters """
     # list of all of master objects
@@ -114,12 +143,16 @@ class Master(Process):
     # next available ID for master objects
     next_ID = 0
 
-    def __init__(self):
+    def __init__(self,
+            # the switch where the master is located
+            switch):
         Process.__init__(self)
         self.ID = Master.next_ID
         Master.next_ID += 1
         self.name = "master{:d}".format(self.ID)
         Master.master_list.append(self)
+        self.outlink = Link(self, switch, propagation_time=0)
+        self.inlink = Link(switch, self, propagation_time=0)
 
     def run(self,
             # number of trigger messages to transmit per elementary cycle
@@ -136,7 +169,7 @@ class Master(Process):
                     log.info("{:s}: instructing transmission of {:s}".format(
                         self, trigger_msg))
                     activate(trigger_msg,
-                        trigger_msg.transmit(slave.downlink0))
+                        trigger_msg.transmit(self.outlink))
             while True:
                 time_since_EC_start = now() - time_last_EC_start
                 delay_before_next_tx_order = float(FTT.EC_LENGTH -
@@ -181,7 +214,7 @@ class Message(Process):
         yield release, self, link.resource
         log.info("{link:s} {msg:s}: transmission finished".format(
             link=link, msg=self))
-        reactivate(link.destination)
+        reactivate(link.end_point)
 
     def __str__(self):
         return self.name
@@ -199,22 +232,21 @@ class TriggerMessage(Message):
 ## Experiment configuration -------------------------
 
 config = {
-    'simulation_time': Ethernet.MAX_FRAME_LENGTH * 11,
+    'simulation_time': Ethernet.MAX_FRAME_LENGTH * 13,
     'num_slaves': 2,
 }
 
 ## Model/Experiment ------------------------------
 
-def create_slaves(number):
-    for i in range(number):
-        Slave()
-
 def main():
     initialize()
-    master0 = Master()
-    create_slaves(config['num_slaves'])
+    switch0 = Switch()
+    master0 = Master(switch0)
+    for i in range(config['num_slaves']):
+        Slave([switch0])
     for slave in Slave.slave_set:
         activate(slave, slave.run(), at=0.0)
+    activate(switch0, switch0.run(), at=0.0)
     activate(master0, master0.run(), at=0.0)
     simulate(until=config['simulation_time'])
 
