@@ -93,7 +93,8 @@ class Slave(Process):
                 received_message))
             number = 2
             for message_count in range(number):
-                msg = Message()
+                msg_destination = Slave.slave_set - set([self])
+                msg = Message(self, msg_destination, "Sync")
                 msg.length = Ethernet.MAX_FRAME_LENGTH
                 # order the transmission of the message
                 activate(msg, msg.transmit(self.uplink0))
@@ -130,7 +131,7 @@ class Master(Process):
             time_last_EC_start = now()
             for message_count in range(num_trigger_messages):
                 for slave in Slave.slave_set:
-                    trigger_msg = TriggerMessage()
+                    trigger_msg = Message(self, Slave.slave_set, "TM")
                     trigger_msg.length = Ethernet.MAX_FRAME_LENGTH
                     log.info("{:s}: instructing transmission of {:s}".format(
                         self, trigger_msg))
@@ -157,11 +158,15 @@ class Message(Process):
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self):
+    def __init__(self, source, destination, msg_type):
         Process.__init__(self)
         self.ID = Message.next_ID
+        self.source = source
+        self.destination = destination
+        self.msg_type = msg_type
         Message.next_ID += 1
-        self.name = "msg{:03d}".format(self.ID)
+        self.name = "({:03d}, {:s}, {:s}, {:s})".format(self.ID, self.source,
+            self.destination, self.msg_type)
 
     def transmit(self, link):
         log.info("{link:s} {msg:s}: waiting for transmission".format(
