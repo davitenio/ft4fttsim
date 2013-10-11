@@ -38,7 +38,7 @@ class Ethernet:
 
 ## Model components ------------------------
 
-class Link:
+class Link(Resource):
     """ Class for links used in the FT4FTT network. Objects of this class may
     interconnect arbitrary NetworkComponents.
     """
@@ -48,11 +48,11 @@ class Link:
         assert isinstance(start_point, NetworkComponent)
         assert isinstance(end_point, NetworkComponent)
         assert propagation_time >= 0
+        Resource.__init__(self, 1)
         self.start_point = start_point
         self.end_point = end_point
         self.propagation_time = propagation_time
         self.name = "{:s}->{:s}".format(start_point, end_point)
-        self.resource = Resource(1, name="resource for " + self.name)
         # message that is being transmitted in the link
         self.message = None
 
@@ -226,14 +226,14 @@ class Message(Process):
     def transmit(self, link):
         log.info("{link:s} {msg:s}: waiting for transmission".format(
             link=link, msg=self))
-        yield request, self, link.resource
+        yield request, self, link
         log.info("{link:s} {msg:s}: transmission started".format(
             link=link, msg=self))
         transmission_time = self.length
         link.put_message(self)
         yield hold, self, (transmission_time + link.propagation_time +
             Ethernet.IFG)
-        yield release, self, link.resource
+        yield release, self, link
         log.info("{link:s} {msg:s}: transmission finished".format(
             link=link, msg=self))
         reactivate(link.end_point)
