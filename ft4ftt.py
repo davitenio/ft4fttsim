@@ -8,8 +8,6 @@ class SimLoggerAdapter(logging.LoggerAdapter):
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)5s %(message)s")
 log = SimLoggerAdapter(logging.getLogger('ft4fttsim'), {})
 
-## Model components ------------------------
-
 class Ethernet:
     # All lengths are indicated in bytes
     # Ethernet IEEE 802.3 preamble length
@@ -42,9 +40,11 @@ class FTT:
     EC_count = 0
 
 
+## Model components ------------------------
+
 class Link:
     """ Class for links used in the FT4FTT network. Objects of this class may
-    interconnect arbitrary network components, e.g., slaves, masters, switches.
+    interconnect arbitrary NetworkComponents.
     """
     def __init__(self, start_point, end_point, propagation_time):
         self.start_point = start_point
@@ -71,31 +71,15 @@ class Link:
         return self.name
 
 
+class NetworkComponent(Process):
 
-
-class Slave(Process):
-    """ Class for FTT slaves """
-    # set of all slave objects
-    slave_set = set()
-    # next available ID for slave objects
-    next_ID = 0
-
-    def __init__(self):
+    def __init__(self, name):
         Process.__init__(self)
-        self.ID = Slave.next_ID
-        self.name = "slave{:d}".format(self.ID)
-        Slave.next_ID += 1
-        # list of outlinks to which the slave is connected
+        # list of outlinks to which the network component is connected
         self.outlinks = []
-        # list of inlinks to which the slave is connected
+        # list of inlinks to which the network component is connected
         self.inlinks = []
-        Slave.slave_set.add(self)
-
-    def get_outlinks(self):
-        return self.outlinks
-
-    def get_inlinks(self):
-        return self.inlinks
+        self.name = name
 
     def connect_outlink(self, link):
         self.outlinks.append(link)
@@ -103,14 +87,31 @@ class Slave(Process):
     def connect_inlink(self, link):
         self.inlinks.append(link)
 
+    def get_outlinks(self):
+        return self.outlinks
+
+    def get_inlinks(self):
+        return self.inlinks
+
     def read_inlinks(self):
         received_messages = []
         for inlink in self.get_inlinks():
+            log.debug("{:s}: checking {:s} for messages".format(self,
+                inlink))
             if inlink.has_message():
                 received_messages.append(inlink.get_message())
-        log.info("{:s}: received messages {:s}".format(self,
-            received_messages))
+                log.info("{:s}: received messages {:s}".format(self,
+                    received_messages))
         return received_messages
+
+    def __str__(self):
+        return self.name
+
+
+
+
+class Slave(NetworkComponent):
+    """ Class for FTT slaves """
 
     def transmit_synchronous_messages(self,
             # number of messages to transmit
@@ -141,103 +142,36 @@ class Slave(Process):
                 delay_before_next_tx_order = 0.0
                 yield hold, self, delay_before_next_tx_order
 
-    def __str__(self):
-        return self.name
 
 
-
-class Switch(Process):
+class Switch(NetworkComponent):
     """ Class for ethernet switches """
-    # list of all switch objects
-    switch_list = []
-    # next available ID for switch objects
-    next_ID = 0
-
-    def __init__(self):
-        Process.__init__(self)
-        self.ID = Switch.next_ID
-        Switch.next_ID += 1
-        self.name = "switch{:d}".format(self.ID)
-        # list of outlinks to which the switch is connected
-        self.outlinks = []
-        # list of inlinks to which the switch is connected
-        self.inlinks = []
-        Switch.switch_list.append(self)
-
-    def connect_outlink(self, link):
-        self.outlinks.append(link)
-
-    def connect_inlink(self, link):
-        self.inlinks.append(link)
-
-    def read_inlinks(self):
-        received_messages = []
-        for inlink in self.get_inlinks():
-            log.debug("{:s}: checking {:s} for messages".format(self,
-                inlink))
-            if inlink.has_message():
-                received_messages.append(inlink.get_message())
-        log.info("{:s}: received messages {:s}".format(self,
-            received_messages))
-        return received_messages
-
-    def get_outlinks(self):
-        return self.outlinks
-
-    def get_inlinks(self):
-        return self.inlinks
 
     def run(self):
         while True:
             # sleep until a message is received
             yield passivate, self
             received_messages = self.read_inlinks()
-            log.info("{:s}: received messages {:s}".format(self,
-                received_messages))
             # TODO: implement switching
 
 
-    def __str__(self):
-        return self.name
-
-
-class Master(Process):
+class Master(NetworkComponent):
     """ Class for FTT masters """
-    # list of all of master objects
-    master_list = []
-    # next available ID for master objects
-    next_ID = 0
 
     def __init__(self,
+            name,
+            # slaves for which the master is responsible
+            slaves,
             elementary_cycle_length,
             # number of trigger messages to transmit per elementary cycle
             num_trigger_messages=1):
-        Process.__init__(self)
-        self.ID = Master.next_ID
-        Master.next_ID += 1
+        NetworkComponent.__init__(self, name)
+        self.slaves = slaves
         self.EC_length = elementary_cycle_length
-        self.name = "master{:d}".format(self.ID)
-        # list of outlinks to which the master is connected
-        self.outlinks = []
-        # list of inlinks to which the master is connected
-        self.inlinks = []
         self.num_trigger_messages = num_trigger_messages
-        Master.master_list.append(self)
-
-    def get_outlinks(self):
-        return self.outlinks
-
-    def get_inlinks(self):
-        return self.inlinks
-
-    def connect_outlink(self, link):
-        self.outlinks.append(link)
-
-    def connect_inlink(self, link):
-        self.inlinks.append(link)
 
     def broadcast_trigger_message(self):
-        trigger_message = Message(self, Slave.slave_set, "TM")
+        trigger_message = Message(self, self.slaves, "TM")
         trigger_message.length = Ethernet.MAX_FRAME_LENGTH
         for outlink in self.get_outlinks():
             log.info("{:s}: instructing transmission of {:s}".format(
@@ -330,14 +264,15 @@ def create_network(
         slaves = []
         masters = []
         switches = []
-        for i in range(num_slaves):
-            new_slave = Slave()
+        for slave_idx in range(num_slaves):
+            new_slave = Slave("slave{:d}".format(slave_idx))
             slaves.append(new_slave)
-        for i in range(num_masters):
-            new_master = Master(FTT.EC_LENGTH, 1)
+        for master_idx in range(num_masters):
+            new_master = Master("master{:d}".format(master_idx), slaves,
+                FTT.EC_LENGTH, 1)
             masters.append(new_master)
-        for i in range(num_switches):
-            new_switch = Switch()
+        for switch_idx in range(num_switches):
+            new_switch = Switch("switch{:d}".format(switch_idx))
             switches.append(new_switch)
         return slaves, masters, switches
 
