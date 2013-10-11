@@ -47,6 +47,11 @@ class Link:
     interconnect arbitrary NetworkComponents.
     """
     def __init__(self, start_point, end_point, propagation_time):
+        """ Creates a link from start_point to end_point whose propagation time
+        is propagation_time. """
+        assert isinstance(start_point, NetworkComponent)
+        assert isinstance(end_point, NetworkComponent)
+        assert propagation_time >= 0
         self.start_point = start_point
         self.end_point = end_point
         self.propagation_time = propagation_time
@@ -59,6 +64,7 @@ class Link:
         return self.message != None
 
     def put_message(self, message):
+        assert isinstance(message, Message)
         self.message = message
         log.debug("{:s}: accepted message {:s}".format(self, self.message))
 
@@ -82,9 +88,12 @@ class NetworkComponent(Process):
         self.name = name
 
     def connect_outlink(self, link):
+        assert link.start_point == self
         self.outlinks.append(link)
 
     def connect_inlink(self, link):
+        assert isinstance(link, Link)
+        assert link.end_point == self
         self.inlinks.append(link)
 
     def get_outlinks(self):
@@ -118,6 +127,7 @@ class Slave(NetworkComponent):
             number,
             # links on which to transmit each of the messages
             links):
+        assert isinstance(number, int)
         for message_count in range(number):
             msg_destination = slave.slave_set - set([self])
             new_message = message(self, msg_destination, "sync")
@@ -165,6 +175,7 @@ class Master(NetworkComponent):
             elementary_cycle_length,
             # number of trigger messages to transmit per elementary cycle
             num_trigger_messages=1):
+        assert isinstance(num_trigger_messages, int)
         NetworkComponent.__init__(self, name)
         self.slaves = slaves
         self.EC_length = elementary_cycle_length
@@ -296,6 +307,9 @@ def create_network(
             switch.connect_inlink(master_outlink)
             switch.connect_outlink(master_inlink)
 
+    assert isinstance(num_slaves, int)
+    assert isinstance(num_masters, int)
+    assert isinstance(num_switches, int)
     network = create_network_components(num_slaves, num_masters, num_switches)
     setup_network_topology(*network)
     return network
