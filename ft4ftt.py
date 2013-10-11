@@ -208,11 +208,6 @@ class Master(NetworkComponent):
                 else:
                     break
 
-    def __str__(self):
-        return self.name
-
-
-
 class Message(Process):
     """ Class for messages sent by a slave """
     # next available ID for message objects
