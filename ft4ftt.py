@@ -224,17 +224,17 @@ class Message(Process):
             self.destination, self.message_type)
 
     def transmit(self, link):
-        log.info("{link:s} {msg:s}: waiting for transmission".format(
+        log.info("{msg:s}: waiting for transmission on {link:s}".format(
             link=link, msg=self))
         yield request, self, link
-        log.info("{link:s} {msg:s}: transmission started".format(
+        log.info("{msg:s}: transmission started on {link:s}".format(
             link=link, msg=self))
         transmission_time = self.length
         link.put_message(self)
         yield hold, self, (transmission_time + link.propagation_time +
             Ethernet.IFG)
         yield release, self, link
-        log.info("{link:s} {msg:s}: transmission finished".format(
+        log.info("{msg:s}: transmission finished on {link:s}".format(
             link=link, msg=self))
         reactivate(link.end_point)
 
