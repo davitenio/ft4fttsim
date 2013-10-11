@@ -5,7 +5,7 @@ class SimLoggerAdapter(logging.LoggerAdapter):
     def process(self, log_msg, kwargs):
         return "{:>8.2f}: {:s}".format(now(), log_msg), kwargs
 
-logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)5s %(message)s")
 log = SimLoggerAdapter(logging.getLogger('ft4fttsim'), {})
 
 ## Model components ------------------------
@@ -43,19 +43,24 @@ class FTT:
 
 
 class Link:
-    """ Class for links between slaves and switches, and for interlinks between
-    switches. Note that each link is unidirectional. """
+    """ Class for links used in the FT4FTT network. Objects of this class may
+    interconnect arbitrary network components, e.g., slaves, masters, switches.
+    """
     def __init__(self, start_point, end_point, propagation_time):
         self.start_point = start_point
         self.end_point = end_point
         self.propagation_time = propagation_time
-        self.name = "Link {:s}->{:s}".format(start_point, end_point)
+        self.name = "{:s}->{:s}".format(start_point, end_point)
         self.resource = Resource(1, name="resource for " + self.name)
         # message that is being transmitted in the link
         self.message = None
 
-    def put_message(self, m):
-        self.message = m
+    def has_message(self):
+        return self.message != None
+
+    def put_message(self, message):
+        self.message = message
+        log.debug("{:s}: accepted message {:s}".format(self, self.message))
 
     def get_message(self):
         tmp = self.message
@@ -75,34 +80,63 @@ class Slave(Process):
     # next available ID for slave objects
     next_ID = 0
 
-    def __init__(self,
-            # list of switches to which the slave is connected
-            adjacent_switches):
+    def __init__(self):
         Process.__init__(self)
         self.ID = Slave.next_ID
         self.name = "slave{:d}".format(self.ID)
         Slave.next_ID += 1
-        self.uplinks = []
-        self.downlinks = []
-        for switch in adjacent_switches:
-            self.uplinks.append(Link(self, switch, propagation_time=0))
-            self.downlinks.append(Link(self, switch, propagation_time=0))
+        # list of outlinks to which the slave is connected
+        self.outlinks = []
+        # list of inlinks to which the slave is connected
+        self.inlinks = []
         Slave.slave_set.add(self)
+
+    def get_outlinks(self):
+        return self.outlinks
+
+    def get_inlinks(self):
+        return self.inlinks
+
+    def connect_outlink(self, link):
+        self.outlinks.append(link)
+
+    def connect_inlink(self, link):
+        self.inlinks.append(link)
+
+    def read_inlinks(self):
+        received_messages = []
+        for inlink in self.get_inlinks():
+            if inlink.has_message():
+                received_messages.append(inlink.get_message())
+        log.info("{:s}: received messages {:s}".format(self,
+            received_messages))
+        return received_messages
+
+    def transmit_synchronous_messages(self,
+            # number of messages to transmit
+            number,
+            # links on which to transmit each of the messages
+            links):
+        for message_count in range(number):
+            msg_destination = slave.slave_set - set([self])
+            new_message = message(self, msg_destination, "sync")
+            new_message.length = ethernet.max_frame_length
+            # order the transmission of the message on the specified links
+            for outlink in links:
+                activate(new_message, new_message.transmit(outlink))
 
     def run(self):
         while True:
-            # sleep until a message is received on downlink0
+            # sleep until a message is received
             yield passivate, self
-            received_message = self.downlink0.get_message()
-            log.info("{:s}: received message {:s}".format(self,
-                received_message))
-            number = 2
-            for message_count in range(number):
-                msg_destination = Slave.slave_set - set([self])
-                msg = Message(self, msg_destination, "Sync")
-                msg.length = Ethernet.MAX_FRAME_LENGTH
-                # order the transmission of the message
-                activate(msg, msg.transmit(self.uplink0))
+            received_messages = read_inlinks()
+            has_received_trigger_message = false
+            for message in received_messages:
+                if message.is_trigger_message():
+                    has_received_trigger_message = True
+            if has_received_trigger_message:
+                # transmit on all outlinks
+                transmit_synchronous_messages(2, self.get_outlinks())
                 # wait before we order the next transmission
                 delay_before_next_tx_order = 0.0
                 yield hold, self, delay_before_next_tx_order
@@ -124,13 +158,44 @@ class Switch(Process):
         self.ID = Switch.next_ID
         Switch.next_ID += 1
         self.name = "switch{:d}".format(self.ID)
+        # list of outlinks to which the switch is connected
+        self.outlinks = []
+        # list of inlinks to which the switch is connected
+        self.inlinks = []
         Switch.switch_list.append(self)
+
+    def connect_outlink(self, link):
+        self.outlinks.append(link)
+
+    def connect_inlink(self, link):
+        self.inlinks.append(link)
+
+    def read_inlinks(self):
+        received_messages = []
+        for inlink in self.get_inlinks():
+            log.debug("{:s}: checking {:s} for messages".format(self,
+                inlink))
+            if inlink.has_message():
+                received_messages.append(inlink.get_message())
+        log.info("{:s}: received messages {:s}".format(self,
+            received_messages))
+        return received_messages
+
+    def get_outlinks(self):
+        return self.outlinks
+
+    def get_inlinks(self):
+        return self.inlinks
 
     def run(self):
         while True:
             # sleep until a message is received
             yield passivate, self
+            received_messages = self.read_inlinks()
+            log.info("{:s}: received messages {:s}".format(self,
+                received_messages))
             # TODO: implement switching
+
 
     def __str__(self):
         return self.name
@@ -144,35 +209,54 @@ class Master(Process):
     next_ID = 0
 
     def __init__(self,
-            # the switch where the master is located
-            switch):
+            elementary_cycle_length,
+            # number of trigger messages to transmit per elementary cycle
+            num_trigger_messages=1):
         Process.__init__(self)
         self.ID = Master.next_ID
         Master.next_ID += 1
+        self.EC_length = elementary_cycle_length
         self.name = "master{:d}".format(self.ID)
+        # list of outlinks to which the master is connected
+        self.outlinks = []
+        # list of inlinks to which the master is connected
+        self.inlinks = []
+        self.num_trigger_messages = num_trigger_messages
         Master.master_list.append(self)
-        self.outlink = Link(self, switch, propagation_time=0)
-        self.inlink = Link(switch, self, propagation_time=0)
 
-    def run(self,
-            # number of trigger messages to transmit per elementary cycle
-            num_trigger_messages=1):
+    def get_outlinks(self):
+        return self.outlinks
+
+    def get_inlinks(self):
+        return self.inlinks
+
+    def connect_outlink(self, link):
+        self.outlinks.append(link)
+
+    def connect_inlink(self, link):
+        self.inlinks.append(link)
+
+    def broadcast_trigger_message(self):
+        trigger_message = Message(self, Slave.slave_set, "TM")
+        trigger_message.length = Ethernet.MAX_FRAME_LENGTH
+        for outlink in self.get_outlinks():
+            log.info("{:s}: instructing transmission of {:s}".format(
+                self, trigger_message))
+            activate(trigger_message,
+                trigger_message.transmit(outlink))
+
+    def run(self):
         while True:
             log.info("==== {:s}: EC {:d} ====".format(
                 self, FTT.EC_count))
             FTT.EC_count += 1
             time_last_EC_start = now()
-            for message_count in range(num_trigger_messages):
-                for slave in Slave.slave_set:
-                    trigger_msg = Message(self, Slave.slave_set, "TM")
-                    trigger_msg.length = Ethernet.MAX_FRAME_LENGTH
-                    log.info("{:s}: instructing transmission of {:s}".format(
-                        self, trigger_msg))
-                    activate(trigger_msg,
-                        trigger_msg.transmit(self.outlink))
+            for message_count in range(self.num_trigger_messages):
+                self.broadcast_trigger_message()
+            # wait for the next elementary cycle to start
             while True:
                 time_since_EC_start = now() - time_last_EC_start
-                delay_before_next_tx_order = float(FTT.EC_LENGTH -
+                delay_before_next_tx_order = float(self.EC_length -
                     time_since_EC_start)
                 if delay_before_next_tx_order > 0:
                     log.info("{:s}: sleeping for {:7.2f} time units".format(
@@ -196,10 +280,10 @@ class Message(Process):
         self.ID = Message.next_ID
         self.source = source
         self.destination = destination
-        self.msg_type = msg_type
+        self.message_type = msg_type
         Message.next_ID += 1
         self.name = "({:03d}, {:s}, {:s}, {:s})".format(self.ID, self.source,
-            self.destination, self.msg_type)
+            self.destination, self.message_type)
 
     def transmit(self, link):
         log.info("{link:s} {msg:s}: waiting for transmission".format(
@@ -216,6 +300,9 @@ class Message(Process):
             link=link, msg=self))
         reactivate(link.end_point)
 
+    def is_trigger_message(self):
+        return self.message_type == "TM"
+
     def __str__(self):
         return self.name
 
@@ -229,25 +316,76 @@ class TriggerMessage(Message):
 
 
 
-## Experiment configuration -------------------------
+def create_network(
+        # number of slaves to create in the network
+        num_slaves,
+        # number of masters to create in the network
+        num_masters,
+        # number of switches to create in the network
+        num_switches):
+    def create_network_components(
+            num_slaves,
+            num_masters,
+            num_switches):
+        slaves = []
+        masters = []
+        switches = []
+        for i in range(num_slaves):
+            new_slave = Slave()
+            slaves.append(new_slave)
+        for i in range(num_masters):
+            new_master = Master(FTT.EC_LENGTH, 1)
+            masters.append(new_master)
+        for i in range(num_switches):
+            new_switch = Switch()
+            switches.append(new_switch)
+        return slaves, masters, switches
+
+    def setup_network_topology(slaves, masters, switches):
+        # connect each slave with all switches
+        for slave in slaves:
+            for switch in switches:
+                slave_outlink = Link(slave, switch, 0)
+                slave_inlink = Link(switch, slave, 0)
+                slave.connect_outlink(slave_outlink)
+                slave.connect_inlink(slave_inlink)
+                switch.connect_outlink(slave_inlink)
+                switch.connect_inlink(slave_outlink)
+        # connect each master to a different single switch
+        assert len(masters) == len(switches)
+        for master, switch in zip(masters, switches):
+            master_outlink = Link(master, switch, 0)
+            master_inlink = Link(switch, master, 0)
+            master.connect_outlink(master_outlink)
+            master.connect_inlink(master_inlink)
+            switch.connect_inlink(master_outlink)
+            switch.connect_outlink(master_inlink)
+
+    network = create_network_components(num_slaves, num_masters, num_switches)
+    setup_network_topology(*network)
+    return network
+
+
+## Model/Experiment ------------------------------
 
 config = {
     'simulation_time': Ethernet.MAX_FRAME_LENGTH * 13,
     'num_slaves': 2,
+    'num_masters':  1,
+    'num_switches': 1,
 }
 
-## Model/Experiment ------------------------------
+def activate_network(network):
+     for list_of_components in network:
+        for component in list_of_components:
+            activate(component, component.run(), at=0.0)
 
 def main():
+    # initialize SimPy
     initialize()
-    switch0 = Switch()
-    master0 = Master(switch0)
-    for i in range(config['num_slaves']):
-        Slave([switch0])
-    for slave in Slave.slave_set:
-        activate(slave, slave.run(), at=0.0)
-    activate(switch0, switch0.run(), at=0.0)
-    activate(master0, master0.run(), at=0.0)
+    network = create_network(
+        config['num_slaves'], config['num_masters'], config['num_switches'])
+    activate_network(network)
     simulate(until=config['simulation_time'])
 
 if __name__ == '__main__': main()
