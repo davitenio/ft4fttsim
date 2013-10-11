@@ -34,10 +34,6 @@ class Ethernet:
         ETHERTYPE_LENGTH + MAX_PAYLOAD_LENGTH + FCS_LENGTH)
 
 
-class FTT:
-    EC_LENGTH = Ethernet.MAX_FRAME_LENGTH * 10
-    # This counter is incremented after each successive elementary cycle
-    EC_count = 0
 
 
 ## Model components ------------------------
@@ -180,6 +176,8 @@ class Master(NetworkComponent):
         self.slaves = slaves
         self.EC_length = elementary_cycle_length
         self.num_trigger_messages = num_trigger_messages
+        # This counter is incremented after each successive elementary cycle
+        self.EC_count = 0
 
     def broadcast_trigger_message(self):
         trigger_message = Message(self, self.slaves, "TM")
@@ -193,8 +191,8 @@ class Master(NetworkComponent):
     def run(self):
         while True:
             log.info("==== {:s}: EC {:d} ====".format(
-                self, FTT.EC_count))
-            FTT.EC_count += 1
+                self, self.EC_count))
+            self.EC_count += 1
             time_last_EC_start = now()
             for message_count in range(self.num_trigger_messages):
                 self.broadcast_trigger_message()
@@ -267,11 +265,14 @@ def create_network(
         # number of masters to create in the network
         num_masters,
         # number of switches to create in the network
-        num_switches):
+        num_switches,
+        # the length of the elementary cycles
+        EC_length):
     def create_network_components(
             num_slaves,
             num_masters,
-            num_switches):
+            num_switches,
+            EC_length):
         slaves = []
         masters = []
         switches = []
@@ -280,7 +281,7 @@ def create_network(
             slaves.append(new_slave)
         for master_idx in range(num_masters):
             new_master = Master("master{:d}".format(master_idx), slaves,
-                FTT.EC_LENGTH, 1)
+                EC_length, 1)
             masters.append(new_master)
         for switch_idx in range(num_switches):
             new_switch = Switch("switch{:d}".format(switch_idx))
@@ -310,19 +311,13 @@ def create_network(
     assert isinstance(num_slaves, int)
     assert isinstance(num_masters, int)
     assert isinstance(num_switches, int)
-    network = create_network_components(num_slaves, num_masters, num_switches)
+    network = create_network_components(num_slaves, num_masters, num_switches,
+        EC_length)
     setup_network_topology(*network)
     return network
 
 
 ## Model/Experiment ------------------------------
-
-config = {
-    'simulation_time': Ethernet.MAX_FRAME_LENGTH * 13,
-    'num_slaves': 2,
-    'num_masters':  1,
-    'num_switches': 1,
-}
 
 def activate_network(network):
      for list_of_components in network:
@@ -330,10 +325,18 @@ def activate_network(network):
             activate(component, component.run(), at=0.0)
 
 def main():
+    config = {
+        'simulation_time': Ethernet.MAX_FRAME_LENGTH * 13,
+        'num_slaves': 2,
+        'num_masters':  1,
+        'num_switches': 1,
+        'FTT_EC_length': Ethernet.MAX_FRAME_LENGTH * 2
+    }
+
     # initialize SimPy
     initialize()
-    network = create_network(
-        config['num_slaves'], config['num_masters'], config['num_switches'])
+    network = create_network(config['num_slaves'], config['num_masters'],
+        config['num_switches'], config['FTT_EC_length'])
     activate_network(network)
     simulate(until=config['simulation_time'])
 
