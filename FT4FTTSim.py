@@ -1,3 +1,5 @@
+# author: David Gessner <davidges@gmail.com>
+
 from SimPy.Simulation import *
 import logging
 
