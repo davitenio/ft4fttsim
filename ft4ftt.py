@@ -56,6 +56,9 @@ class Link(Resource):
         # message that is being transmitted in the link
         self.message = None
 
+    def get_end_point(self):
+        return self.end_point
+
     def has_message(self):
         return self.message != None
 
@@ -104,9 +107,10 @@ class NetworkComponent(Process):
             log.debug("{:s}: checking {:s} for messages".format(self,
                 inlink))
             if inlink.has_message():
-                received_messages.append(inlink.get_message())
-                log.info("{:s}: received messages {:s}".format(self,
-                    received_messages))
+                message = inlink.get_message()
+                log.info("{:s}: received message {:s} on {:s}".format(self,
+                    message, inlink))
+                received_messages.append(message)
         return received_messages
 
     def __str__(self):
@@ -125,25 +129,29 @@ class Slave(NetworkComponent):
             links):
         assert isinstance(number, int)
         for message_count in range(number):
-            msg_destination = slave.slave_set - set([self])
-            new_message = message(self, msg_destination, "sync")
-            new_message.length = ethernet.max_frame_length
+            # TODO: decide who each message should be transmitted to. For now
+            # we simply broadcast them.
+            destination_list = list(set(Network.slaves) - set([self]))
+            new_message = Message(self, destination_list, "sync")
+            new_message.length = Ethernet.MAX_FRAME_LENGTH
             # order the transmission of the message on the specified links
             for outlink in links:
+                log.info(("{:s}: instructing transmission of " +
+                    "{:s} on {:s}").format(self, new_message, outlink))
                 activate(new_message, new_message.transmit(outlink))
 
     def run(self):
         while True:
             # sleep until a message is received
             yield passivate, self
-            received_messages = read_inlinks()
-            has_received_trigger_message = false
+            received_messages = self.read_inlinks()
+            has_received_trigger_message = False
             for message in received_messages:
                 if message.is_trigger_message():
                     has_received_trigger_message = True
             if has_received_trigger_message:
                 # transmit on all outlinks
-                transmit_synchronous_messages(2, self.get_outlinks())
+                self.transmit_synchronous_messages(2, self.get_outlinks())
                 # wait before we order the next transmission
                 delay_before_next_tx_order = 0.0
                 yield hold, self, delay_before_next_tx_order
@@ -153,12 +161,36 @@ class Slave(NetworkComponent):
 class Switch(NetworkComponent):
     """ Class for ethernet switches """
 
+    def forward_messages(self, message_list):
+        """ Forward each message in message_list to the appropriate
+        outlink. """
+
+        def find_outlinks(destination_list):
+            """ Return a list of the outlinks that have as their endpoint one of
+            the network components in the list destination_list. """
+            assert isinstance(destination_list, list)
+            destination_outlinks = []
+            for outlink in self.get_outlinks():
+                if outlink.get_end_point() in destination_list:
+                    destination_outlinks.append(outlink)
+            return destination_outlinks
+
+        for message in message_list:
+            destinations = message.get_destination_list()
+            destination_outlinks = find_outlinks(destinations)
+            for link in destination_outlinks:
+                new_message = Message(message.get_source(),
+                    message.get_destination_list(), message.message_type)
+                log.info(("{:s}: forwarding {:s} as {:s} on {:s}").format(self,
+                    message, new_message, link))
+                activate(new_message, message.transmit(link))
+
     def run(self):
         while True:
             # sleep until a message is received
             yield passivate, self
             received_messages = self.read_inlinks()
-            # TODO: implement switching
+            self.forward_messages(received_messages)
 
 
 class Master(NetworkComponent):
@@ -209,21 +241,39 @@ class Master(NetworkComponent):
                     break
 
 class Message(Process):
-    """ Class for messages sent by a slave """
+    """ Class for messages sent by a NetworkComponent """
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self, source, destination, msg_type):
+    def __init__(self, source, destination_list, msg_type):
+        assert isinstance(source, NetworkComponent)
+        assert isinstance(destination_list, list)
+        for destination in destination_list:
+            assert isinstance(destination, NetworkComponent)
         Process.__init__(self)
         self.ID = Message.next_ID
-        self.source = source
-        self.destination = destination
-        self.message_type = msg_type
         Message.next_ID += 1
+        # source of the message. Models the source MAC address.
+        self.source = source
+        # destination of the message. It models the destination MAC address. It
+        # is a list to allow multicast addressing.
+        self.destination_list = destination_list
+        self.message_type = msg_type
         self.name = "({:03d}, {:s}, {:s}, {:s})".format(self.ID, self.source,
-            self.destination, self.message_type)
+            self.destination_list, self.message_type)
+
+    def get_destination_list(self):
+        """ Return the destination NetworkComponent for the message, which
+        models the destination MAC address. """
+        return self.destination_list
+
+    def get_source(self):
+        """ Return the source NetworkComponent for the message, which
+        models the source MAC address. """
+        return self.source
 
     def transmit(self, link):
+        assert isinstance(link, Link)
         log.info("{msg:s}: waiting for transmission on {link:s}".format(
             link=link, msg=self))
         yield request, self, link
@@ -312,6 +362,14 @@ def create_network(
     return network
 
 
+class Network:
+    # TODO: implement a proper class for Network. For now it is simply here to
+    # hold the list of slaves so that this list can be accessed as if it was a
+    # global variable.
+    slaves = None
+
+
+
 ## Model/Experiment ------------------------------
 
 def activate_network(network):
@@ -321,11 +379,11 @@ def activate_network(network):
 
 def main():
     config = {
-        'simulation_time': Ethernet.MAX_FRAME_LENGTH * 13,
+        'simulation_time': Ethernet.MAX_FRAME_LENGTH * 4,
         'num_slaves': 2,
         'num_masters':  1,
         'num_switches': 1,
-        'FTT_EC_length': Ethernet.MAX_FRAME_LENGTH * 2
+        'FTT_EC_length': Ethernet.MAX_FRAME_LENGTH * 20
     }
 
     # initialize SimPy
@@ -333,6 +391,7 @@ def main():
     network = create_network(config['num_slaves'], config['num_masters'],
         config['num_switches'], config['FTT_EC_length'])
     activate_network(network)
+    Network.slaves = network[0]
     simulate(until=config['simulation_time'])
 
 if __name__ == '__main__': main()
