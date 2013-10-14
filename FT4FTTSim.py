@@ -43,15 +43,15 @@ class Ethernet:
 class Link(Resource):
     """
     Class for links used in the FT4FTT network. Objects of this class may
-    interconnect arbitrary NetworkComponents.
+    interconnect arbitrary NetworkDevices.
     """
     def __init__(self, start_point, end_point, propagation_time):
         """
         Creates a link from start_point to end_point whose propagation time is
         propagation_time.
         """
-        assert isinstance(start_point, NetworkComponent)
-        assert isinstance(end_point, NetworkComponent)
+        assert isinstance(start_point, NetworkDevice)
+        assert isinstance(end_point, NetworkDevice)
         assert propagation_time >= 0
         Resource.__init__(self, 1)
         self.start_point = start_point
@@ -81,13 +81,13 @@ class Link(Resource):
         return self.name
 
 
-class NetworkComponent(Process):
+class NetworkDevice(Process):
 
     def __init__(self, name):
         Process.__init__(self)
-        # list of outlinks to which the network component is connected
+        # list of outlinks to which the network device is connected
         self.outlinks = []
-        # list of inlinks to which the network component is connected
+        # list of inlinks to which the network device is connected
         self.inlinks = []
         self.name = name
 
@@ -124,7 +124,7 @@ class NetworkComponent(Process):
 
 
 
-class Slave(NetworkComponent):
+class Slave(NetworkDevice):
     """
     Class for FTT slaves.
     """
@@ -165,7 +165,7 @@ class Slave(NetworkComponent):
 
 
 
-class Switch(NetworkComponent):
+class Switch(NetworkDevice):
     """
     Class for ethernet switches.
     """
@@ -178,7 +178,7 @@ class Switch(NetworkComponent):
         def find_outlinks(destination_list):
             """
             Return a list of the outlinks that have as their endpoint one of
-            the network components in the list destination_list.
+            the network devices in the list destination_list.
             """
             assert isinstance(destination_list, list)
             destination_outlinks = []
@@ -205,7 +205,7 @@ class Switch(NetworkComponent):
             self.forward_messages(received_messages)
 
 
-class Master(NetworkComponent):
+class Master(NetworkDevice):
     """
     Class for FTT masters.
     """
@@ -218,7 +218,7 @@ class Master(NetworkComponent):
             # number of trigger messages to transmit per elementary cycle
             num_trigger_messages=1):
         assert isinstance(num_trigger_messages, int)
-        NetworkComponent.__init__(self, name)
+        NetworkDevice.__init__(self, name)
         self.slaves = slaves
         self.EC_length = elementary_cycle_length
         self.num_trigger_messages = num_trigger_messages
@@ -256,16 +256,16 @@ class Master(NetworkComponent):
 
 class Message(Process):
     """
-    Class for messages sent by a NetworkComponent.
+    Class for messages sent by a NetworkDevice.
     """
     # next available ID for message objects
     next_ID = 0
 
     def __init__(self, source, destination_list, msg_type):
-        assert isinstance(source, NetworkComponent)
+        assert isinstance(source, NetworkDevice)
         assert isinstance(destination_list, list)
         for destination in destination_list:
-            assert isinstance(destination, NetworkComponent)
+            assert isinstance(destination, NetworkDevice)
         Process.__init__(self)
         self.ID = Message.next_ID
         Message.next_ID += 1
@@ -280,14 +280,14 @@ class Message(Process):
 
     def get_destination_list(self):
         """
-        Return the destination NetworkComponent for the message, which models
+        Return the destination NetworkDevice for the message, which models
         the destination MAC address.
         """
         return self.destination_list
 
     def get_source(self):
         """
-        Return the source NetworkComponent for the message, which models the
+        Return the source NetworkDevice for the message, which models the
         source MAC address.
         """
         return self.source
@@ -335,7 +335,7 @@ def create_network(
         num_switches,
         # the length of the elementary cycles
         EC_length):
-    def create_network_components(
+    def create_network_devices(
             num_slaves,
             num_masters,
             num_switches,
@@ -378,7 +378,7 @@ def create_network(
     assert isinstance(num_slaves, int)
     assert isinstance(num_masters, int)
     assert isinstance(num_switches, int)
-    network = create_network_components(num_slaves, num_masters, num_switches,
+    network = create_network_devices(num_slaves, num_masters, num_switches,
         EC_length)
     setup_network_topology(*network)
     return network
@@ -395,9 +395,9 @@ class Network:
 ## Model/Experiment ------------------------------
 
 def activate_network(network):
-     for list_of_components in network:
-        for component in list_of_components:
-            activate(component, component.run(), at=0.0)
+     for list_of_devices in network:
+        for device in list_of_devices:
+            activate(device, device.run(), at=0.0)
 
 def main():
     config = {

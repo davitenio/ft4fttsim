@@ -8,8 +8,8 @@ logging.disable(logging.CRITICAL)
 class TestLink(unittest.TestCase):
 
     def setUp(self):
-        self.source = NetworkComponent("source")
-        self.destination = NetworkComponent("destination")
+        self.source = NetworkDevice("source")
+        self.destination = NetworkDevice("destination")
         self.link = Link(self.source, self.destination, 0)
 
     def test_get_end_point__link_created__end_point_is_correct(self):
@@ -27,109 +27,109 @@ class TestLink(unittest.TestCase):
         self.assertEqual(self.link.get_message(), None)
 
 
-class TestNetworkComponent(unittest.TestCase):
+class TestNetworkDevice(unittest.TestCase):
 
     def setUp(self):
-        self.component = NetworkComponent("test component")
+        self.device = NetworkDevice("test device")
 
-    def test_get_outlinks__new_component__returns_empty_list(self):
-        self.assertEqual(self.component.get_outlinks(), [])
+    def test_get_outlinks__new_device__returns_empty_list(self):
+        self.assertEqual(self.device.get_outlinks(), [])
 
-    def test_get_inlinks__new_component__returns_empty_list(self):
-        self.assertEqual(self.component.get_inlinks(), [])
+    def test_get_inlinks__new_device__returns_empty_list(self):
+        self.assertEqual(self.device.get_inlinks(), [])
 
     def test_get_outlinks__connected_1_outlink__returns_new_outlink(self):
-        outlink = Link(self.component, NetworkComponent("destination"), 0)
-        self.component.connect_outlink(outlink)
-        self.assertEqual(self.component.get_outlinks(), [outlink])
+        outlink = Link(self.device, NetworkDevice("destination"), 0)
+        self.device.connect_outlink(outlink)
+        self.assertEqual(self.device.get_outlinks(), [outlink])
 
     def test_get_outlinks__connected_2_outlinks__returns_new_outlinks(self):
-        outlink1 = Link(self.component, NetworkComponent("destination1"), 0)
-        outlink2 = Link(self.component, NetworkComponent("destination2"), 0)
-        self.component.connect_outlink(outlink1)
-        self.component.connect_outlink(outlink2)
-        self.assertEqual(self.component.get_outlinks(), [outlink1, outlink2])
+        outlink1 = Link(self.device, NetworkDevice("destination1"), 0)
+        outlink2 = Link(self.device, NetworkDevice("destination2"), 0)
+        self.device.connect_outlink(outlink1)
+        self.device.connect_outlink(outlink2)
+        self.assertEqual(self.device.get_outlinks(), [outlink1, outlink2])
 
     def test_get_outlinks__connected_3_outlinks__returns_new_outlinks(self):
-        outlink1 = Link(self.component, NetworkComponent("destination1"), 0)
-        outlink2 = Link(self.component, NetworkComponent("destination2"), 0)
-        outlink3 = Link(self.component, NetworkComponent("destination3"), 0)
-        self.component.connect_outlink(outlink1)
-        self.component.connect_outlink(outlink2)
-        self.component.connect_outlink(outlink3)
-        self.assertEqual(self.component.get_outlinks(),
+        outlink1 = Link(self.device, NetworkDevice("destination1"), 0)
+        outlink2 = Link(self.device, NetworkDevice("destination2"), 0)
+        outlink3 = Link(self.device, NetworkDevice("destination3"), 0)
+        self.device.connect_outlink(outlink1)
+        self.device.connect_outlink(outlink2)
+        self.device.connect_outlink(outlink3)
+        self.assertEqual(self.device.get_outlinks(),
             [outlink1, outlink2, outlink3])
 
     def test_get_inlinks__connected_1_inlink__returns_new_inlink(self):
-        inlink = Link(NetworkComponent("source"), self.component, 0)
-        self.component.connect_inlink(inlink)
-        self.assertEqual(self.component.get_inlinks(), [inlink])
+        inlink = Link(NetworkDevice("source"), self.device, 0)
+        self.device.connect_inlink(inlink)
+        self.assertEqual(self.device.get_inlinks(), [inlink])
 
     def test_get_inlinks__connected_2_inlinks__returns_new_inlinks(self):
-        inlink1 = Link(NetworkComponent("source1"), self.component, 0)
-        inlink2 = Link(NetworkComponent("source2"), self.component, 0)
-        self.component.connect_inlink(inlink1)
-        self.component.connect_inlink(inlink2)
-        self.assertEqual(self.component.get_inlinks(), [inlink1, inlink2])
+        inlink1 = Link(NetworkDevice("source1"), self.device, 0)
+        inlink2 = Link(NetworkDevice("source2"), self.device, 0)
+        self.device.connect_inlink(inlink1)
+        self.device.connect_inlink(inlink2)
+        self.assertEqual(self.device.get_inlinks(), [inlink1, inlink2])
 
     def test_get_inlinks__connected_3_inlinks__returns_new_inlinks(self):
-        inlink1 = Link(NetworkComponent("source1"), self.component, 0)
-        inlink2 = Link(NetworkComponent("source2"), self.component, 0)
-        inlink3 = Link(NetworkComponent("source3"), self.component, 0)
-        self.component.connect_inlink(inlink1)
-        self.component.connect_inlink(inlink2)
-        self.component.connect_inlink(inlink3)
-        self.assertEqual(self.component.get_inlinks(),
+        inlink1 = Link(NetworkDevice("source1"), self.device, 0)
+        inlink2 = Link(NetworkDevice("source2"), self.device, 0)
+        inlink3 = Link(NetworkDevice("source3"), self.device, 0)
+        self.device.connect_inlink(inlink1)
+        self.device.connect_inlink(inlink2)
+        self.device.connect_inlink(inlink3)
+        self.assertEqual(self.device.get_inlinks(),
             [inlink1, inlink2, inlink3])
 
     def test_read_inlinks__put_message_on_1_inlink__returns_message(self):
-        source = NetworkComponent("source")
-        inlink = Link(source, self.component, 0)
-        self.component.connect_inlink(inlink)
-        test_message = Message(source, [self.component], "test message")
+        source = NetworkDevice("source")
+        inlink = Link(source, self.device, 0)
+        self.device.connect_inlink(inlink)
+        test_message = Message(source, [self.device], "test message")
         inlink.put_message(test_message)
-        received_messages = self.component.read_inlinks()
+        received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message])
 
     def test_read_inlinks__1_empty_inlink__returns_empty_list(self):
-        source = NetworkComponent("source")
-        inlink = Link(source, self.component, 0)
-        self.component.connect_inlink(inlink)
-        received_messages = self.component.read_inlinks()
+        source = NetworkDevice("source")
+        inlink = Link(source, self.device, 0)
+        self.device.connect_inlink(inlink)
+        received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [])
 
     def test_read_inlinks__2_empty_inlinks__returns_empty_list(self):
-        source = NetworkComponent("source")
-        inlink1 = Link(source, self.component, 0)
-        inlink2 = Link(source, self.component, 0)
-        self.component.connect_inlink(inlink1)
-        self.component.connect_inlink(inlink2)
-        received_messages = self.component.read_inlinks()
+        source = NetworkDevice("source")
+        inlink1 = Link(source, self.device, 0)
+        inlink2 = Link(source, self.device, 0)
+        self.device.connect_inlink(inlink1)
+        self.device.connect_inlink(inlink2)
+        received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [])
 
     def test_read_inlinks__put_same_message_on_2_inlinks__returns_messages(self):
-        source = NetworkComponent("source")
-        inlink1 = Link(source, self.component, 0)
-        inlink2 = Link(source, self.component, 0)
-        self.component.connect_inlink(inlink1)
-        self.component.connect_inlink(inlink2)
-        test_message = Message(source, [self.component], "test message")
+        source = NetworkDevice("source")
+        inlink1 = Link(source, self.device, 0)
+        inlink2 = Link(source, self.device, 0)
+        self.device.connect_inlink(inlink1)
+        self.device.connect_inlink(inlink2)
+        test_message = Message(source, [self.device], "test message")
         inlink1.put_message(test_message)
         inlink2.put_message(test_message)
-        received_messages = self.component.read_inlinks()
+        received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message, test_message])
 
     def test_read_inlinks__put_diff_message_on_2_inlinks__returns_messages(self):
-        source = NetworkComponent("source")
-        inlink1 = Link(source, self.component, 0)
-        inlink2 = Link(source, self.component, 0)
-        self.component.connect_inlink(inlink1)
-        self.component.connect_inlink(inlink2)
-        test_message1 = Message(source, [self.component], "test message1")
-        test_message2 = Message(source, [self.component], "test message2")
+        source = NetworkDevice("source")
+        inlink1 = Link(source, self.device, 0)
+        inlink2 = Link(source, self.device, 0)
+        self.device.connect_inlink(inlink1)
+        self.device.connect_inlink(inlink2)
+        test_message1 = Message(source, [self.device], "test message1")
+        test_message2 = Message(source, [self.device], "test message2")
         inlink1.put_message(test_message1)
         inlink2.put_message(test_message2)
-        received_messages = self.component.read_inlinks()
+        received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message1, test_message2])
 
 
