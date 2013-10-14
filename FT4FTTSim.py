@@ -45,21 +45,24 @@ class Link(Resource):
     Class for links used in the FT4FTT network. Objects of this class may
     interconnect arbitrary NetworkDevices.
     """
-    def __init__(self, start_point, end_point, propagation_time):
+    def __init__(self, propagation_time):
         """
-        Creates a link from start_point to end_point whose propagation time is
-        propagation_time.
+        Creates a link whose propagation time is propagation_time.
         """
-        assert isinstance(start_point, NetworkDevice)
-        assert isinstance(end_point, NetworkDevice)
         assert propagation_time >= 0
         Resource.__init__(self, 1)
-        self.start_point = start_point
-        self.end_point = end_point
+        self.start_point = None
+        self.end_point = None
         self.propagation_time = propagation_time
-        self.name = "{:s}->{:s}".format(start_point, end_point)
+        self.name = "{:s}->{:s}".format(self.start_point, self.end_point)
         # message that is being transmitted in the link
         self.message = None
+
+    def set_start_point(self, device):
+        self.start_point = device
+
+    def set_end_point(self, device):
+        self.end_point = device
 
     def get_end_point(self):
         return self.end_point
@@ -92,13 +95,20 @@ class NetworkDevice(Process):
         self.name = name
 
     def connect_outlink(self, link):
-        assert link.start_point == self
+        link.set_start_point(self)
         self.outlinks.append(link)
 
     def connect_inlink(self, link):
-        assert isinstance(link, Link)
-        assert link.end_point == self
+        link.set_end_point(self)
         self.inlinks.append(link)
+
+    def connect_outlink_list(self, link_list):
+        for link in link_list:
+            self.connect_outlink(link)
+
+    def connect_inlink_list(self, link_list):
+        for link in link_list:
+            self.connect_inlink(link)
 
     def get_outlinks(self):
         return self.outlinks
