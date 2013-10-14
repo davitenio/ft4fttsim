@@ -71,7 +71,6 @@ class Link(Resource):
         return self.message != None
 
     def put_message(self, message):
-        assert isinstance(message, Message)
         self.message = message
         log.debug("{:s}: accepted message {:s}".format(self, self.message))
 
