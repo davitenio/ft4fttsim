@@ -41,12 +41,15 @@ class Ethernet:
 ## Model components ------------------------
 
 class Link(Resource):
-    """ Class for links used in the FT4FTT network. Objects of this class may
+    """
+    Class for links used in the FT4FTT network. Objects of this class may
     interconnect arbitrary NetworkComponents.
     """
     def __init__(self, start_point, end_point, propagation_time):
-        """ Creates a link from start_point to end_point whose propagation time
-        is propagation_time. """
+        """
+        Creates a link from start_point to end_point whose propagation time is
+        propagation_time.
+        """
         assert isinstance(start_point, NetworkComponent)
         assert isinstance(end_point, NetworkComponent)
         assert propagation_time >= 0
@@ -122,7 +125,9 @@ class NetworkComponent(Process):
 
 
 class Slave(NetworkComponent):
-    """ Class for FTT slaves """
+    """
+    Class for FTT slaves.
+    """
 
     def transmit_synchronous_messages(self,
             # number of messages to transmit
@@ -161,15 +166,20 @@ class Slave(NetworkComponent):
 
 
 class Switch(NetworkComponent):
-    """ Class for ethernet switches """
+    """
+    Class for ethernet switches.
+    """
 
     def forward_messages(self, message_list):
-        """ Forward each message in message_list to the appropriate
-        outlink. """
+        """
+        Forward each message in message_list to the appropriate outlink.
+        """
 
         def find_outlinks(destination_list):
-            """ Return a list of the outlinks that have as their endpoint one of
-            the network components in the list destination_list. """
+            """
+            Return a list of the outlinks that have as their endpoint one of
+            the network components in the list destination_list.
+            """
             assert isinstance(destination_list, list)
             destination_outlinks = []
             for outlink in self.get_outlinks():
@@ -196,7 +206,9 @@ class Switch(NetworkComponent):
 
 
 class Master(NetworkComponent):
-    """ Class for FTT masters """
+    """
+    Class for FTT masters.
+    """
 
     def __init__(self,
             name,
@@ -243,7 +255,9 @@ class Master(NetworkComponent):
                     break
 
 class Message(Process):
-    """ Class for messages sent by a NetworkComponent """
+    """
+    Class for messages sent by a NetworkComponent.
+    """
     # next available ID for message objects
     next_ID = 0
 
@@ -265,13 +279,17 @@ class Message(Process):
             self.destination_list, self.message_type)
 
     def get_destination_list(self):
-        """ Return the destination NetworkComponent for the message, which
-        models the destination MAC address. """
+        """
+        Return the destination NetworkComponent for the message, which models
+        the destination MAC address.
+        """
         return self.destination_list
 
     def get_source(self):
-        """ Return the source NetworkComponent for the message, which
-        models the source MAC address. """
+        """
+        Return the source NetworkComponent for the message, which models the
+        source MAC address.
+        """
         return self.source
 
     def transmit(self, link):
@@ -298,7 +316,9 @@ class Message(Process):
 
 
 class TriggerMessage(Message):
-    """ Class for trigger messages sent by the FTT masters """
+    """
+    Class for trigger messages sent by the FTT masters.
+    """
 
     def __init__(self):
         Message.__init__(self)
