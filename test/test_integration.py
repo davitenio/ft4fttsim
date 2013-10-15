@@ -1,9 +1,7 @@
 # author: David Gessner <davidges@gmail.com>
 
 import unittest
-from FT4FTTSim import *
-
-logging.disable(logging.CRITICAL)
+from ft4fttsim.networking import *
 
 
 class TestLinkIntegration(unittest.TestCase):

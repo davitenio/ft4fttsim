@@ -2,9 +2,7 @@
 
 import unittest
 from mock import sentinel, Mock
-from FT4FTTSim import *
-
-logging.disable(logging.CRITICAL)
+from ft4fttsim.networking import *
 
 
 class TestLink(unittest.TestCase):
