@@ -16,12 +16,12 @@ class Master(NetworkDevice):
             slaves,
             elementary_cycle_length,
             # number of trigger messages to transmit per elementary cycle
-            num_trigger_messages=1):
-        assert isinstance(num_trigger_messages, int)
+            num_TMs_per_EC=1):
+        assert isinstance(num_TMs_per_EC, int)
         NetworkDevice.__init__(self, name)
         self.slaves = slaves
         self.EC_length = elementary_cycle_length
-        self.num_trigger_messages = num_trigger_messages
+        self.num_TMs_per_EC = num_TMs_per_EC
         # This counter is incremented after each successive elementary cycle
         self.EC_count = 0
 
@@ -35,7 +35,7 @@ class Master(NetworkDevice):
         while True:
             self.EC_count += 1
             time_last_EC_start = now()
-            for message_count in range(self.num_trigger_messages):
+            for message_count in range(self.num_TMs_per_EC):
                 self.broadcast_trigger_message()
             # wait for the next elementary cycle to start
             while True:
