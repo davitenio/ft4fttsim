@@ -135,5 +135,22 @@ class TestNetworkDevice(unittest.TestCase):
         self.assertEqual(received_messages, [])
 
 
+class TestMessage(unittest.TestCase):
+
+    def setUp(self):
+        self.message = Message(sentinel.source, sentinel.destinations,
+            sentinel.message_type)
+
+    def test_get_destination_list__message_created__returns_expected_dst(self):
+        expected_destination = sentinel.destinations
+        actual_destination = self.message.get_destination_list()
+        self.assertEqual(actual_destination, expected_destination)
+
+    def test_get_source__message_created__returns_expected_source(self):
+        expected_source = sentinel.source
+        actual_source = self.message.get_source()
+        self.assertEqual(actual_source, expected_source)
+
+
 if __name__ == '__main__':
     unittest.main()
