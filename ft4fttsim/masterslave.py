@@ -29,8 +29,7 @@ class Master(NetworkDevice):
         trigger_message = Message(self, self.slaves, "TM")
         trigger_message.length = Ethernet.MAX_FRAME_LENGTH
         for outlink in self.get_outlinks():
-            activate(trigger_message,
-                trigger_message.transmit(outlink))
+            self.instruct_transmission(trigger_message, outlink)
 
     def run(self):
         while True:
@@ -77,7 +76,7 @@ class Slave(NetworkDevice):
             new_message.length = Ethernet.MAX_FRAME_LENGTH
             # order the transmission of the message on the specified links
             for outlink in links:
-                activate(new_message, new_message.transmit(outlink))
+                self.instruct_transmission(new_message, outlink)
 
     def run(self):
         while True:

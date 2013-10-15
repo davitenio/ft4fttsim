@@ -3,6 +3,7 @@
 import unittest
 from mock import sentinel, Mock
 from ft4fttsim.networking import *
+from ft4fttsim.exceptions import FT4FTTSimException
 
 
 class TestLink(unittest.TestCase):
@@ -171,6 +172,12 @@ class TestNetworkDevice(unittest.TestCase):
         self.device.read_inlinks()
         for link in inlinks:
             link.get_message.assert_called_once_with()
+
+    def test_instruct_transmission__no_outlink__raise_exception(self):
+        not_connected_outlink = sentinel.dummy_link
+        self.assertRaises(FT4FTTSimException,
+            self.device.instruct_transmission,
+            sentinel.message, not_connected_outlink)
 
 
 class TestMessage(unittest.TestCase):
