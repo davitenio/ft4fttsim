@@ -197,5 +197,22 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(actual_source, expected_source)
 
 
+class TestSwitch(unittest.TestCase):
+
+    def setUp(self):
+        self.switch = Switch("switch under test")
+
+    def test_forward_messages__no_outlinks__no_instruct_transmission(self):
+        """
+        If the switch does not have any outlinks, then the function
+        instruct_transmission should not be called.
+        """
+        self.switch.instruct_transmission = Mock()
+        message_list = [Message(sentinel.source, sentinel.destinations,
+            sentinel.message_type) for i in range(10)]
+        self.switch.forward_messages(message_list)
+        self.assertFalse(self.switch.instruct_transmission.called)
+
+
 if __name__ == '__main__':
     unittest.main()
