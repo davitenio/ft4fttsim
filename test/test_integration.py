@@ -5,6 +5,7 @@ from FT4FTTSim import *
 
 logging.disable(logging.CRITICAL)
 
+
 class TestLinkIntegration(unittest.TestCase):
 
     def setUp(self):
@@ -37,7 +38,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.device.connect_outlink(outlink2)
         self.assertEqual(self.device.get_outlinks(), [outlink1, outlink2])
 
-    def test_get_outlinks__connect_2_outlinks_at_once__returns_new_outlinks(self):
+    def test_get_outlinks__connect_outlink_list_2__returns_new_outlinks(self):
         outlinks = [Link(0) for num_links in range(2)]
         self.device.connect_outlink_list(outlinks)
         self.assertEqual(self.device.get_outlinks(), outlinks)
@@ -52,7 +53,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.assertEqual(self.device.get_outlinks(),
             [outlink1, outlink2, outlink3])
 
-    def test_get_outlinks__connect_20_outlinks_at_once__returns_new_outlinks(self):
+    def test_get_outlinks__connect_outlink_list_20__returns_new_outlinks(self):
         outlinks = [Link(0) for num_links in range(20)]
         self.device.connect_outlink_list(outlinks)
         self.assertEqual(self.device.get_outlinks(), outlinks)
@@ -84,7 +85,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.assertEqual(self.device.get_inlinks(),
             [inlink1, inlink2, inlink3])
 
-    def test_get_inlinks__connect_20_inlinks_at_once__returns_new_inlinks(self):
+    def test_get_inlinks__connect_inlink_list_20__returns_new_inlinks(self):
         inlinks = [Link(0) for num_links in range(20)]
         self.device.connect_inlink_list(inlinks)
         self.assertEqual(self.device.get_inlinks(), inlinks)
@@ -114,7 +115,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [])
 
-    def test_read_inlinks__put_same_message_on_2_inlinks__returns_messages(self):
+    def test_read_inlinks__put_message_on_2_inlinks__returns_messages(self):
         source = NetworkDevice("source")
         inlink1 = Link(0)
         inlink2 = Link(0)
@@ -126,7 +127,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message, test_message])
 
-    def test_read_inlinks__put_diff_message_on_2_inlinks__returns_messages(self):
+    def test_read_inlinks__put_diff_msg_on_2_inlinks__returns_messages(self):
         source = NetworkDevice("source")
         inlink1 = Link(0)
         inlink2 = Link(0)
@@ -138,7 +139,6 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         inlink2.put_message(test_message2)
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message1, test_message2])
-
 
 
 if __name__ == '__main__':

@@ -3,12 +3,14 @@
 from SimPy.Simulation import *
 import logging
 
+
 class SimLoggerAdapter(logging.LoggerAdapter):
     def process(self, log_msg, kwargs):
         return "{:>8.2f}: {:s}".format(now(), log_msg), kwargs
 
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)5s %(message)s")
 log = SimLoggerAdapter(logging.getLogger('ft4fttsim'), {})
+
 
 class Ethernet:
     # All lengths are indicated in bytes
@@ -35,10 +37,6 @@ class Ethernet:
     MAX_FRAME_LENGTH = (PREAMBLE_LENGTH + SFD_LENGTH + 2 * MAC_ADDRESS_LENGTH +
         ETHERTYPE_LENGTH + MAX_PAYLOAD_LENGTH + FCS_LENGTH)
 
-
-
-
-## Model components ------------------------
 
 class Link(Resource):
     """
@@ -131,8 +129,6 @@ class NetworkDevice(Process):
         return self.name
 
 
-
-
 class Slave(NetworkDevice):
     """
     Class for FTT slaves.
@@ -171,7 +167,6 @@ class Slave(NetworkDevice):
                 # wait before we order the next transmission
                 delay_before_next_tx_order = 0.0
                 yield hold, self, delay_before_next_tx_order
-
 
 
 class Switch(NetworkDevice):
@@ -263,6 +258,7 @@ class Master(NetworkDevice):
                 else:
                     break
 
+
 class Message(Process):
     """
     Class for messages sent by a NetworkDevice.
@@ -334,7 +330,6 @@ class TriggerMessage(Message):
         self.name = "TM{:03d}".format(self.ID)
 
 
-
 def create_network(
         # number of slaves to create in the network
         num_slaves,
@@ -400,13 +395,11 @@ class Network:
     slaves = None
 
 
-
-## Model/Experiment ------------------------------
-
 def activate_network(network):
-     for list_of_devices in network:
+    for list_of_devices in network:
         for device in list_of_devices:
             activate(device, device.run(), at=0.0)
+
 
 def main():
     config = {
@@ -425,4 +418,6 @@ def main():
     Network.slaves = network[0]
     simulate(until=config['simulation_time'])
 
-if __name__ == '__main__': main()
+
+if __name__ == '__main__':
+    main()
