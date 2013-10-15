@@ -105,7 +105,6 @@ class Switch(NetworkDevice):
             Return a list of the outlinks that have as their endpoint one of
             the network devices in the list destination_list.
             """
-            assert isinstance(destination_list, list)
             destination_outlinks = []
             for outlink in self.get_outlinks():
                 if outlink.get_end_point() in destination_list:
@@ -136,10 +135,6 @@ class Message(Process):
     next_ID = 0
 
     def __init__(self, source, destination_list, msg_type):
-        assert isinstance(source, NetworkDevice)
-        assert isinstance(destination_list, list)
-        for destination in destination_list:
-            assert isinstance(destination, NetworkDevice)
         Process.__init__(self)
         self.ID = Message.next_ID
         Message.next_ID += 1
@@ -167,7 +162,9 @@ class Message(Process):
         return self.source
 
     def transmit(self, link):
-        assert isinstance(link, Link)
+        """
+        Transmit the message instance on the Link link.
+        """
         yield request, self, link
         transmission_time = self.length
         link.put_message(self)
