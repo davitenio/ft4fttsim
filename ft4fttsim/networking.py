@@ -3,6 +3,7 @@
 from SimPy.Simulation import *
 from ethernet import Ethernet
 from exceptions import FT4FTTSimException
+from simlogging import log
 
 
 class Link(Resource):
@@ -89,6 +90,8 @@ class NetworkDevice(Process):
         return received_messages
 
     def instruct_transmission(self, message, outlink):
+        log.debug("{:s} instructing transmission of {} on {}".format(self,
+            message, outlink))
         if outlink not in self.get_outlinks():
             raise FT4FTTSimException("{} is not an outlink of {}".format(
                 outlink, self))
@@ -160,6 +163,7 @@ class Message(Process):
         self.name = "({:03d}, {:s}, {:s}, {:d}, {:s})".format(self.ID,
             self.source, self.destination_list, self.length,
             self.message_type)
+        log.debug("{:s} created".format(self))
 
     def get_destination_list(self):
         """

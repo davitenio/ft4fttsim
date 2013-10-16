@@ -8,6 +8,12 @@ class SimLoggerAdapter(logging.LoggerAdapter):
     def process(self, log_msg, kwargs):
         return "{:>8.2f}: {:s}".format(now(), log_msg), kwargs
 
-logging.basicConfig(level=logging.DEBUG, format="%(levelname)5s %(message)s")
+logging.basicConfig(level=logging.DEBUG,
+    format="%(levelname)5s:%(filename)s:%(lineno)4d: %(message)s")
 
-log = SimLoggerAdapter(logging.getLogger('ft4fttsim'), {})
+logger = logging.getLogger('ft4fttsim')
+# By default we prevent the logger from printing anything. If you need to see
+# the logging output, set simlogging.logger.propagate = True within the file
+# that imports the simlogging module.
+logger.propagate = False
+log = SimLoggerAdapter(logger, {})
