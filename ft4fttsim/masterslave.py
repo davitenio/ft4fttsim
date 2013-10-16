@@ -26,9 +26,9 @@ class Master(NetworkDevice):
         self.EC_count = 0
 
     def broadcast_trigger_message(self):
-        trigger_message = Message(self, self.slaves,
-            Ethernet.MAX_FRAME_LENGTH, "TM")
         for outlink in self.get_outlinks():
+            trigger_message = Message(self, self.slaves,
+                Ethernet.MAX_FRAME_LENGTH, "TM")
             self.instruct_transmission(trigger_message, outlink)
 
     def run(self):
