@@ -184,6 +184,7 @@ class TestMessage(unittest.TestCase):
 
     def setUp(self):
         self.message = Message(sentinel.source, sentinel.destinations,
+            Ethernet.MAX_FRAME_LENGTH,
             sentinel.message_type)
 
     def test_get_destination_list__message_created__returns_expected_dst(self):
@@ -209,6 +210,7 @@ class TestSwitch(unittest.TestCase):
         """
         self.switch.instruct_transmission = Mock()
         message_list = [Message(sentinel.source, sentinel.destinations,
+            Ethernet.MAX_FRAME_LENGTH,
             sentinel.message_type) for i in range(10)]
         self.switch.forward_messages(message_list)
         self.assertFalse(self.switch.instruct_transmission.called)

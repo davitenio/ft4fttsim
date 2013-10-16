@@ -123,7 +123,9 @@ class Switch(NetworkDevice):
             destination_outlinks = find_outlinks(destinations)
             for link in destination_outlinks:
                 new_message = Message(message.get_source(),
-                    message.get_destination_list(), message.message_type)
+                    message.get_destination_list(),
+                    message.length,
+                    message.message_type)
                 self.instruct_transmission(new_message, link)
 
     def run(self):
@@ -141,7 +143,7 @@ class Message(Process):
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self, source, destination_list, msg_type):
+    def __init__(self, source, destination_list, length, msg_type):
         Process.__init__(self)
         self.ID = Message.next_ID
         Message.next_ID += 1
@@ -150,6 +152,9 @@ class Message(Process):
         # destination of the message. It models the destination MAC address. It
         # is a list to allow multicast addressing.
         self.destination_list = destination_list
+        assert (Ethernet.MIN_FRAME_LENGTH <= length
+            <= Ethernet.MAX_FRAME_LENGTH)
+        self.length = length
         self.message_type = msg_type
         self.name = "({:03d}, {:s}, {:s}, {:s})".format(self.ID, self.source,
             self.destination_list, self.message_type)

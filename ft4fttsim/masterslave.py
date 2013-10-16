@@ -26,8 +26,8 @@ class Master(NetworkDevice):
         self.EC_count = 0
 
     def broadcast_trigger_message(self):
-        trigger_message = Message(self, self.slaves, "TM")
-        trigger_message.length = Ethernet.MAX_FRAME_LENGTH
+        trigger_message = Message(self, self.slaves,
+            Ethernet.MAX_FRAME_LENGTH, "TM")
         for outlink in self.get_outlinks():
             self.instruct_transmission(trigger_message, outlink)
 
@@ -72,8 +72,8 @@ class Slave(NetworkDevice):
         for message_count in range(number):
             # TODO: decide who each message should be transmitted to. For now
             # we simply send it to ourselves.
-            new_message = Message(self, [self], "sync")
-            new_message.length = Ethernet.MAX_FRAME_LENGTH
+            new_message = Message(self, [self],
+                Ethernet.MAX_FRAME_LENGTH, "sync")
             # order the transmission of the message on the specified links
             for outlink in links:
                 self.instruct_transmission(new_message, outlink)
