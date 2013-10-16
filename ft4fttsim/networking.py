@@ -91,7 +91,7 @@ class NetworkDevice(Process):
         if outlink not in self.get_outlinks():
             raise FT4FTTSimException("{} is not an outlink of {}".format(
                 outlink, self))
-        activate(new_message, message.transmit(link))
+        activate(message, message.transmit(outlink))
 
     def __str__(self):
         return self.name
