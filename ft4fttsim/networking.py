@@ -101,6 +101,69 @@ class NetworkDevice(Process):
         return self.name
 
 
+class MessageRecordingDevice(NetworkDevice):
+    def __init__(self, name):
+        NetworkDevice.__init__(self, name)
+        self.recorded_messages = []
+
+    def connect_outlink(self, link):
+        raise NotImplementedError()
+
+    def connect_outlink_list(self, link):
+        raise NotImplementedError()
+
+    def instruct_transmission(self, message, outlink):
+        raise NotImplementedError()
+
+    def run(self):
+        while True:
+            log.debug("{:s} sleeping until next reception".format(self))
+            # sleep until a message is received
+            yield passivate, self
+            received_messages = self.read_inlinks()
+            log.debug("{:s} received {}".format(self,
+                received_messages))
+            timestamp = now()
+            self.recorded_messages.append((timestamp,
+                received_messages))
+            log.debug("{:s} recorded {}".format(self, self.recorded_messages))
+
+
+class MessagePlaybackDevice(NetworkDevice):
+    def __init__(self, name):
+        """
+        list_of_transmissions is a list of '(time, message_list)'
+        tuples, where each 'time' indicates the instant of time when the
+        messages in the list 'message_list' should be transmitted.
+        """
+        NetworkDevice.__init__(self, name)
+        self.list_of_transmissions = []
+
+    def load_transmissions(self, list_of_transmissions):
+        self.list_of_transmissions = list_of_transmissions
+        self.list_of_transmissions.sort()
+        log.debug("{:s} loaded transmissions: {}".format(self,
+            self.list_of_transmissions))
+
+    def connect_inlink(self, link):
+        raise NotImplementedError()
+
+    def connect_inlink_list(self, link):
+        raise NotImplementedError()
+
+    def read_inlinks(self):
+        raise NotImplementedError()
+
+    def run(self):
+        for time, message_list, outlink in self.list_of_transmissions:
+            delay_before_next_tx_order = time - now()
+            log.debug("{:s} sleeping until next transmission".format(self))
+            # sleep until next transmission time
+            yield hold, self, delay_before_next_tx_order
+            for message in message_list:
+                self.instruct_transmission(message, outlink)
+
+
 class Switch(NetworkDevice):
     """
     Class for ethernet switches.
