@@ -19,7 +19,6 @@ class Link(Resource):
         self.start_point = None
         self.end_point = None
         self.propagation_time = propagation_time
-        self.name = "{:s}->{:s}".format(self.start_point, self.end_point)
         # message that is being transmitted in the link
         self.message = None
 
@@ -44,7 +43,7 @@ class Link(Resource):
         return tmp
 
     def __str__(self):
-        return self.name
+        return "{:s}->{:s}".format(self.start_point, self.end_point)
 
 
 class NetworkDevice(Process):
@@ -67,10 +66,12 @@ class NetworkDevice(Process):
 
     def connect_outlink_list(self, link_list):
         for link in link_list:
+            link.set_start_point(self)
             self.connect_outlink(link)
 
     def connect_inlink_list(self, link_list):
         for link in link_list:
+            link.set_end_point(self)
             self.connect_inlink(link)
 
     def get_outlinks(self):
