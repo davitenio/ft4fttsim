@@ -157,8 +157,9 @@ class Message(Process):
             <= Ethernet.MAX_FRAME_LENGTH)
         self.length = length
         self.message_type = msg_type
-        self.name = "({:03d}, {:s}, {:s}, {:s})".format(self.ID, self.source,
-            self.destination_list, self.message_type)
+        self.name = "({:03d}, {:s}, {:s}, {:d}, {:s})".format(self.ID,
+            self.source, self.destination_list, self.length,
+            self.message_type)
 
     def get_destination_list(self):
         """
