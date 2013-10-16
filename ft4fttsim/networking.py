@@ -246,13 +246,17 @@ class Message(Process):
         """
         Transmit the message instance on the Link link.
         """
+        log.debug("{:s} queued for transmission".format(self))
         yield request, self, link
+        log.debug("{:s} transmission started".format(self))
         transmission_time = self.length
         link.put_message(self)
-        yield hold, self, (transmission_time + link.propagation_time +
-            Ethernet.IFG)
-        yield release, self, link
+        yield hold, self, transmission_time + link.propagation_time
+        log.debug("{:s} transmission finished".format(self))
         reactivate(link.end_point)
+        yield hold, self, Ethernet.IFG
+        log.debug("{:s} inter frame gap finished".format(self))
+        yield release, self, link
 
     def is_trigger_message(self):
         return self.message_type == "TM"
