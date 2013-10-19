@@ -118,7 +118,7 @@ class MessageRecordingDevice(NetworkDevice):
     def run(self):
         while True:
             log.debug("{:s} sleeping until next reception".format(self))
-            # sleep until a message is received
+            # sleep until a message notifies that it has finished transmission
             yield passivate, self
             received_messages = self.read_inlinks()
             log.debug("{:s} received {}".format(self,
@@ -197,7 +197,7 @@ class Switch(NetworkDevice):
 
     def run(self):
         while True:
-            # sleep until a message is received
+            # sleep until a message notifies that it has finished transmission
             yield passivate, self
             received_messages = self.read_inlinks()
             self.forward_messages(received_messages)
@@ -247,15 +247,21 @@ class Message(Process):
         Transmit the message instance on the Link link.
         """
         log.debug("{:s} queued for transmission".format(self))
+        # request access to, and possibly queue for, the link
         yield request, self, link
         log.debug("{:s} transmission started".format(self))
         transmission_time = self.length
         link.put_message(self)
+        # wait for the transmission + propagation time to elapse
         yield hold, self, transmission_time + link.propagation_time
+        # transmission finished, notify the link's end point, but do not
+        # release the link yet
         log.debug("{:s} transmission finished".format(self))
         reactivate(link.end_point)
+        # wait for the duration of the ethernet interframe gap to elapse
         yield hold, self, Ethernet.IFG
         log.debug("{:s} inter frame gap finished".format(self))
+        # release the link, allowing another message to gain access to it
         yield release, self, link
 
     def is_trigger_message(self):
