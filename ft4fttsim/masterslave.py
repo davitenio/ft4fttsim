@@ -48,16 +48,6 @@ class Master(NetworkDevice):
                     break
 
 
-class TriggerMessage(Message):
-    """
-    Class for trigger messages sent by the FTT masters.
-    """
-
-    def __init__(self):
-        Message.__init__(self)
-        self.name = "TM{:03d}".format(self.ID)
-
-
 class Slave(NetworkDevice):
     """
     Class for FTT slaves.
