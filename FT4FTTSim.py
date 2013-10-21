@@ -48,8 +48,8 @@ def create_network(
         # connect each slave with all switches
         for slave in slaves:
             for switch in switches:
-                slave_outlink = Link(0)
-                slave_inlink = Link(0)
+                slave_outlink = Link(10, 0)
+                slave_inlink = Link(10, 0)
                 slave.connect_outlink(slave_outlink)
                 slave.connect_inlink(slave_inlink)
                 switch.connect_outlink(slave_inlink)
@@ -57,8 +57,8 @@ def create_network(
         # connect each master to a different single switch
         assert len(masters) == len(switches)
         for master, switch in zip(masters, switches):
-            master_outlink = Link(0)
-            master_inlink = Link(0)
+            master_outlink = Link(10, 0)
+            master_inlink = Link(10, 0)
             master.connect_outlink(master_outlink)
             master.connect_inlink(master_inlink)
             switch.connect_inlink(master_outlink)

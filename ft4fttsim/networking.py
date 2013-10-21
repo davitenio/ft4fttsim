@@ -11,15 +11,21 @@ class Link(Resource):
     Class for links used in the FT4FTT network. Objects of this class may
     interconnect arbitrary NetworkDevices.
     """
-    def __init__(self, propagation_time):
+    def __init__(self,
+            # speed of the link in megabits per second
+            megabits_per_second,
+            # propagation delay of the link in microseconds
+            propagation_delay_us):
         """
-        Creates a link whose propagation time is propagation_time.
+        Creates a link whose propagation time is propagation_delay_us and
+        that operates at a speed of megabits_per_second Mbps.
         """
-        assert propagation_time >= 0
+        assert propagation_delay_us >= 0
         Resource.__init__(self, 1)
         self.start_point = None
         self.end_point = None
-        self.propagation_time = propagation_time
+        self.megabits_per_second = megabits_per_second
+        self.propagation_delay_us = propagation_delay_us
         # message that is being transmitted in the link
         self.message = None
 
@@ -260,16 +266,22 @@ class Message(Process):
         # request access to, and possibly queue for, the link
         yield request, self, link
         log.debug("{:s} transmission started".format(self))
-        transmission_time = self.size_bytes
+        BITS_PER_BYTE = 8
+        # time in microseconds to load the message into the link (it does
+        # not include the propagation time)
+        transmission_time_us = (self.size_bytes * BITS_PER_BYTE /
+            float(link.megabits_per_second))
         link.put_message(self)
         # wait for the transmission + propagation time to elapse
-        yield hold, self, transmission_time + link.propagation_time
+        yield hold, self, transmission_time_us + link.propagation_delay_us
         # transmission finished, notify the link's end point, but do not
         # release the link yet
         log.debug("{:s} transmission finished".format(self))
         reactivate(link.end_point)
         # wait for the duration of the ethernet interframe gap to elapse
-        yield hold, self, Ethernet.IFG_SIZE_BYTES
+        IFG_duration_us = (Ethernet.IFG_SIZE_BYTES * BITS_PER_BYTE /
+            float(link.megabits_per_second))
+        yield hold, self, IFG_duration_us
         log.debug("{:s} inter frame gap finished".format(self))
         # release the link, allowing another message to gain access to it
         yield release, self, link

@@ -9,7 +9,7 @@ from ft4fttsim.exceptions import FT4FTTSimException
 class TestLink(unittest.TestCase):
 
     def setUp(self):
-        self.link = Link(0)
+        self.link = Link(10, 0)
 
     def test_get_end_point__link_created__end_point_is_None(self):
         self.assertEqual(self.link.get_end_point(), None)
