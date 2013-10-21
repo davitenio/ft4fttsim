@@ -16,7 +16,7 @@ class TestLinkIntegration(unittest.TestCase):
         destination = NetworkDevice("destination")
         destination.connect_inlink(self.link)
         m = Message(source, [destination],
-            Ethernet.MAX_FRAME_LENGTH, "test message")
+            Ethernet.MAX_FRAME_SIZE_BYTES, "test message")
         self.link.put_message(m)
         self.assertEqual(self.link.get_message(), m)
 
@@ -95,7 +95,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         link = Link(0)
         self.device.connect_inlink(link)
         test_message = Message(source, [self.device],
-            Ethernet.MAX_FRAME_LENGTH, "test message")
+            Ethernet.MAX_FRAME_SIZE_BYTES, "test message")
         link.put_message(test_message)
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message])
@@ -123,7 +123,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.device.connect_inlink(inlink1)
         self.device.connect_inlink(inlink2)
         test_message = Message(source, [self.device],
-            Ethernet.MAX_FRAME_LENGTH, "test message")
+            Ethernet.MAX_FRAME_SIZE_BYTES, "test message")
         inlink1.put_message(test_message)
         inlink2.put_message(test_message)
         received_messages = self.device.read_inlinks()
@@ -136,9 +136,9 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.device.connect_inlink(inlink1)
         self.device.connect_inlink(inlink2)
         test_message1 = Message(source, [self.device],
-            Ethernet.MAX_FRAME_LENGTH, "test message1")
+            Ethernet.MAX_FRAME_SIZE_BYTES, "test message1")
         test_message2 = Message(source, [self.device],
-            Ethernet.MAX_FRAME_LENGTH, "test message2")
+            Ethernet.MAX_FRAME_SIZE_BYTES, "test message2")
         inlink1.put_message(test_message1)
         inlink2.put_message(test_message2)
         received_messages = self.device.read_inlinks()

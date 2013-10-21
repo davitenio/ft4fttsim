@@ -34,7 +34,7 @@ class TestMessagePlaybackDeviceToRecorder(unittest.TestCase):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         tx_start_time = 0
-        message_length = Ethernet.MAX_FRAME_LENGTH
+        message_length = Ethernet.MAX_FRAME_SIZE_BYTES
         messages_to_transmit = [Message(self.player, self.recorder,
             message_length, "test")]
         outlink = self.player.get_outlinks()[0]
@@ -50,7 +50,7 @@ class TestMessagePlaybackDeviceToRecorder(unittest.TestCase):
         #simlogging.logger.propagate = True
         transmission_start_times = range(2)
         message_list = [[Message(self.player, self.recorder,
-            Ethernet.MAX_FRAME_LENGTH,
+            Ethernet.MAX_FRAME_SIZE_BYTES,
             "test")] for i in transmission_start_times]
         transmissions = []
         for time, messages in zip(transmission_start_times, message_list):
@@ -76,8 +76,8 @@ class TestMasterToSwitchToRecorder(unittest.TestCase):
         """
         self.switch = Switch("test switch")
         self.recorder = MessageRecordingDevice("recorder")
-        EC_length = Ethernet.MAX_FRAME_LENGTH * 10
-        self.master = Master("test master", [self.recorder], EC_length)
+        EC_duration_us = Ethernet.MAX_FRAME_SIZE_BYTES * 10
+        self.master = Master("test master", [self.recorder], EC_duration_us)
         link_master_switch = Link(0)
         link_switch_recorder = Link(0)
         self.master.connect_outlink(link_master_switch)
@@ -90,7 +90,7 @@ class TestMasterToSwitchToRecorder(unittest.TestCase):
             activate(device, device.run(), at=0.0)
 
     def test_network__1EC_simulated__record_1_msg(self):
-        simulate(until=self.master.EC_length)
+        simulate(until=self.master.EC_duration_us)
         timestamp, received_messages = self.recorder.recorded_messages[0]
         self.assertEqual(len(received_messages), 1)
 

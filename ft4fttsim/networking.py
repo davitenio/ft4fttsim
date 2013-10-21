@@ -191,7 +191,7 @@ class Switch(NetworkDevice):
             for link in destination_outlinks:
                 new_message = Message(message.get_source(),
                     message.get_destination_list(),
-                    message.length,
+                    message.size_bytes,
                     message.message_type)
                 self.instruct_transmission(new_message, link)
 
@@ -210,7 +210,17 @@ class Message(Process):
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self, source, destination_list, length, msg_type):
+    def __init__(self,
+            # models the MAC source address
+            source,
+            # list of intended receivers of the message instance. It models
+            # the MAC destination address. It is a list to support
+            # multicast addressing.
+            destination_list,
+            # size of the message instance in bytes
+            size_bytes,
+            # models the ethertype field
+            msg_type):
         Process.__init__(self)
         self.ID = Message.next_ID
         Message.next_ID += 1
@@ -219,12 +229,12 @@ class Message(Process):
         # destination of the message. It models the destination MAC address. It
         # is a list to allow multicast addressing.
         self.destination_list = destination_list
-        assert (Ethernet.MIN_FRAME_LENGTH <= length
-            <= Ethernet.MAX_FRAME_LENGTH)
-        self.length = length
+        assert (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes
+            <= Ethernet.MAX_FRAME_SIZE_BYTES)
+        self.size_bytes = size_bytes
         self.message_type = msg_type
         self.name = "({:03d}, {:s}, {:s}, {:d}, {:s})".format(self.ID,
-            self.source, self.destination_list, self.length,
+            self.source, self.destination_list, self.size_bytes,
             self.message_type)
         log.debug("{:s} created".format(self))
 
@@ -250,7 +260,7 @@ class Message(Process):
         # request access to, and possibly queue for, the link
         yield request, self, link
         log.debug("{:s} transmission started".format(self))
-        transmission_time = self.length
+        transmission_time = self.size_bytes
         link.put_message(self)
         # wait for the transmission + propagation time to elapse
         yield hold, self, transmission_time + link.propagation_time
@@ -259,7 +269,7 @@ class Message(Process):
         log.debug("{:s} transmission finished".format(self))
         reactivate(link.end_point)
         # wait for the duration of the ethernet interframe gap to elapse
-        yield hold, self, Ethernet.IFG
+        yield hold, self, Ethernet.IFG_SIZE_BYTES
         log.debug("{:s} inter frame gap finished".format(self))
         # release the link, allowing another message to gain access to it
         yield release, self, link

@@ -23,12 +23,12 @@ def create_network(
         # number of switches to create in the network
         num_switches,
         # the length of the elementary cycles
-        EC_length):
+        EC_duration_us):
     def create_network_devices(
             num_slaves,
             num_masters,
             num_switches,
-            EC_length):
+            EC_duration_us):
         slaves = []
         masters = []
         switches = []
@@ -37,7 +37,7 @@ def create_network(
             slaves.append(new_slave)
         for master_idx in range(num_masters):
             new_master = Master("master{:d}".format(master_idx), slaves,
-                EC_length, 1)
+                EC_duration_us, 1)
             masters.append(new_master)
         for switch_idx in range(num_switches):
             new_switch = Switch("switch{:d}".format(switch_idx))
@@ -68,7 +68,7 @@ def create_network(
     assert isinstance(num_masters, int)
     assert isinstance(num_switches, int)
     network = create_network_devices(num_slaves, num_masters, num_switches,
-        EC_length)
+        EC_duration_us)
     setup_network_topology(*network)
     return network
 
@@ -88,18 +88,18 @@ def activate_network(network):
 
 def main():
     config = {
-        'simulation_time': Ethernet.MAX_FRAME_LENGTH * 4,
+        'simulation_time': Ethernet.MAX_FRAME_SIZE_BYTES * 4,
         'num_slaves': 2,
         'num_masters':  1,
         'num_switches': 1,
-        'FTT_EC_length': Ethernet.MAX_FRAME_LENGTH * 20
+        'FTT_EC_duration_us': Ethernet.MAX_FRAME_SIZE_BYTES * 20
     }
 
     # initialize SimPy
     initialize()
     logging.info("Simulation initialized")
     network = create_network(config['num_slaves'], config['num_masters'],
-        config['num_switches'], config['FTT_EC_length'])
+        config['num_switches'], config['FTT_EC_duration_us'])
     activate_network(network)
     Network.slaves = network[0]
     logging.info("Starting simulation...")

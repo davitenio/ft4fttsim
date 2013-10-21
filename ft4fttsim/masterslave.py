@@ -14,13 +14,14 @@ class Master(NetworkDevice):
             name,
             # slaves for which the master is responsible
             slaves,
-            elementary_cycle_length,
+            # duration of the elementary cycles in microseconds
+            elementary_cycle_us,
             # number of trigger messages to transmit per elementary cycle
             num_TMs_per_EC=1):
         assert isinstance(num_TMs_per_EC, int)
         NetworkDevice.__init__(self, name)
         self.slaves = slaves
-        self.EC_length = elementary_cycle_length
+        self.EC_duration_us = elementary_cycle_us
         self.num_TMs_per_EC = num_TMs_per_EC
         # This counter is incremented after each successive elementary cycle
         self.EC_count = 0
@@ -28,7 +29,7 @@ class Master(NetworkDevice):
     def broadcast_trigger_message(self):
         for outlink in self.get_outlinks():
             trigger_message = Message(self, self.slaves,
-                Ethernet.MAX_FRAME_LENGTH, "TM")
+                Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
             self.instruct_transmission(trigger_message, outlink)
 
     def run(self):
@@ -40,7 +41,7 @@ class Master(NetworkDevice):
             # wait for the next elementary cycle to start
             while True:
                 time_since_EC_start = now() - time_last_EC_start
-                delay_before_next_tx_order = float(self.EC_length -
+                delay_before_next_tx_order = float(self.EC_duration_us -
                     time_since_EC_start)
                 if delay_before_next_tx_order > 0:
                     yield hold, self, delay_before_next_tx_order
@@ -63,7 +64,7 @@ class Slave(NetworkDevice):
             # TODO: decide who each message should be transmitted to. For now
             # we simply send it to ourselves.
             new_message = Message(self, [self],
-                Ethernet.MAX_FRAME_LENGTH, "sync")
+                Ethernet.MAX_FRAME_SIZE_BYTES, "sync")
             # order the transmission of the message on the specified links
             for outlink in links:
                 self.instruct_transmission(new_message, outlink)
