@@ -223,6 +223,55 @@ class TestMessagePlaybackDeviceToTwoRecorders(unittest.TestCase):
         self.assertEqual(messages_to_transmit2, received_messages2)
 
 
+class TestMessagePlaybackDeviceToSwitchToRecorder(unittest.TestCase):
+
+    def setUp(self):
+        """
+        Set up the following network:
+
+        +--------+      +--------+     +----------+
+        | player | ---> | switch | --> | recorder |
+        +--------+      +--------+     +----------+
+        """
+        self.player = MessagePlaybackDevice("player")
+        self.switch = Switch("switch")
+        self.recorder = MessageRecordingDevice("recorder")
+        self.link_Mbps = 100
+        self.link_propagation_delay_us = 3
+        link_player_switch = Link(self.link_Mbps,
+            self.link_propagation_delay_us)
+        self.player.connect_outlink(link_player_switch)
+        self.switch.connect_inlink(link_player_switch)
+        link_switch_recorder = Link(self.link_Mbps,
+            self.link_propagation_delay_us)
+        self.switch.connect_outlink(link_switch_recorder)
+        self.recorder.connect_inlink(link_switch_recorder)
+        # initialize SimPy
+        initialize()
+        for device in [self.player, self.switch, self.recorder]:
+            activate(device, device.run(), at=0.0)
+
+    def tearDown(self):
+        simlogging.logger.propagate = False
+
+    def test_1_message_forwarded__message_is_received(self):
+        # uncomment the next line to enable logging during this test
+        #simlogging.logger.propagate = True
+        tx_start_time = 0
+        message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
+        messages_to_transmit = [Message(self.player, [self.recorder],
+            message_size_bytes, "test")]
+        outlink = self.player.get_outlinks()[0]
+        transmission_command = {outlink: messages_to_transmit}
+        list_of_commands = {tx_start_time: transmission_command}
+        self.player.load_transmission_commands(list_of_commands)
+        simulate(until=float("inf"))
+        received_messages = self.recorder.get_recorded_messages()
+        for tx_message, rx_message in \
+        zip(messages_to_transmit, received_messages):
+            self.assertTrue(tx_message.is_equivalent(rx_message))
+
+
 class TestMasterToSwitchToRecorder(unittest.TestCase):
 
     def setUp(self):

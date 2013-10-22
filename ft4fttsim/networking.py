@@ -253,6 +253,13 @@ class Message(Process):
             self.message_type)
         log.debug("{:s} created".format(self))
 
+    def get_source(self):
+        """
+        Return the source NetworkDevice for the message, which models the
+        source MAC address.
+        """
+        return self.source
+
     def get_destination_list(self):
         """
         Return the destination NetworkDevice for the message, which models
@@ -260,12 +267,11 @@ class Message(Process):
         """
         return self.destination_list
 
-    def get_source(self):
-        """
-        Return the source NetworkDevice for the message, which models the
-        source MAC address.
-        """
-        return self.source
+    def get_size_in_bytes(self):
+        return self.size_bytes
+
+    def get_message_type(self):
+        return self.message_type
 
     def transmit(self, link):
         """
@@ -294,6 +300,16 @@ class Message(Process):
         log.debug("{:s} inter frame gap finished".format(self))
         # release the link, allowing another message to gain access to it
         yield release, self, link
+
+    def is_equivalent(self, message):
+        """
+        Returns true if self and message are identical except for the message
+        ID.
+        """
+        return (self.get_source() == message.get_source() and
+            self.get_destination_list() == message.get_destination_list() and
+            self.get_size_in_bytes() == message.get_size_in_bytes() and
+            self.get_message_type() == message.get_message_type())
 
     def is_trigger_message(self):
         return self.message_type == "TM"
