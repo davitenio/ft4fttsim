@@ -165,6 +165,64 @@ class TestMessagePlaybackDeviceToRecorder(unittest.TestCase):
         self.assertEqual(all_messages_transmitted, received_messages)
 
 
+class TestMessagePlaybackDeviceToTwoRecorders(unittest.TestCase):
+
+    def setUp(self):
+        """
+        Set up the following network:
+
+        +--------+      +-----------+
+        |        | ---> | recorder1 |
+        |        |      +-----------+
+        | player |
+        |        |      +-----------+
+        |        | ---> | recorder2 |
+        +--------+      +-----------+
+        """
+        self.player = MessagePlaybackDevice("player")
+        self.recorder1 = MessageRecordingDevice("recorder1")
+        self.recorder2 = MessageRecordingDevice("recorder2")
+        self.link_Mbps = 100
+        self.link_propagation_delay_us = 3
+        link_player_recorder1 = Link(self.link_Mbps,
+            self.link_propagation_delay_us)
+        self.player.connect_outlink(link_player_recorder1)
+        self.recorder1.connect_inlink(link_player_recorder1)
+        link_player_recorder2 = Link(self.link_Mbps,
+            self.link_propagation_delay_us)
+        self.player.connect_outlink(link_player_recorder2)
+        self.recorder2.connect_inlink(link_player_recorder2)
+        # initialize SimPy
+        initialize()
+        for device in [self.player, self.recorder1, self.recorder2]:
+            activate(device, device.run(), at=0.0)
+
+    def tearDown(self):
+        simlogging.logger.propagate = False
+
+    def test_1_message_per_outlink__each_recorder_gets_correct_message(self):
+        # uncomment the next line to enable logging during this test
+        #simlogging.logger.propagate = True
+        tx_start_time1, tx_start_time2 = range(2)
+        messages_to_transmit1 = [Message(self.player, self.recorder1,
+            Ethernet.MAX_FRAME_SIZE_BYTES, "message for recorder1")]
+        messages_to_transmit2 = [Message(self.player, self.recorder2,
+            Ethernet.MAX_FRAME_SIZE_BYTES, "message for recorder2")]
+        outlink1 = self.player.get_outlinks()[0]
+        outlink2 = self.player.get_outlinks()[1]
+        list_of_commands = {}
+        transmission_command1 = {outlink1: messages_to_transmit1}
+        list_of_commands[tx_start_time1] = transmission_command1
+        transmission_command2 = {outlink2: messages_to_transmit2}
+        list_of_commands[tx_start_time2] = transmission_command2
+        self.player.load_transmission_commands(list_of_commands)
+        simulate(until=float("inf"))
+        received_messages1 = self.recorder1.get_recorded_messages()
+        self.assertEqual(messages_to_transmit1, received_messages1)
+        received_messages2 = self.recorder2.get_recorded_messages()
+        self.assertEqual(messages_to_transmit2, received_messages2)
+
+
 class TestMasterToSwitchToRecorder(unittest.TestCase):
 
     def setUp(self):
