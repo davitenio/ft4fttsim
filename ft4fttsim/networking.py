@@ -110,7 +110,7 @@ class NetworkDevice(Process):
 class MessageRecordingDevice(NetworkDevice):
     def __init__(self, name):
         NetworkDevice.__init__(self, name)
-        self.recorded_messages = []
+        self.reception_records = {}
 
     def connect_outlink(self, link):
         raise NotImplementedError()
@@ -130,26 +130,33 @@ class MessageRecordingDevice(NetworkDevice):
             log.debug("{:s} received {}".format(self,
                 received_messages))
             timestamp = now()
-            self.recorded_messages.append((timestamp,
-                received_messages))
-            log.debug("{:s} recorded {}".format(self, self.recorded_messages))
+            self.reception_records[timestamp] = received_messages
+            log.debug("{:s} recorded {}".format(self, self.reception_records))
+
+    def get_recorded_messages(self):
+        """
+        Return a list of all recorded messages sorted by timestamp.
+        """
+        messages = []
+        for time in sorted(self.reception_records):
+            messages.extend(self.reception_records[time])
+        return messages
+
+    def get_recorded_timestamps(self):
+        return self.reception_records.keys()
 
 
 class MessagePlaybackDevice(NetworkDevice):
     def __init__(self, name):
         """
-        list_of_transmissions is a list of '(time, message_list)'
-        tuples, where each 'time' indicates the instant of time when the
-        messages in the list 'message_list' should be transmitted.
         """
         NetworkDevice.__init__(self, name)
-        self.list_of_transmissions = []
+        self.transmission_commands = {}
 
-    def load_transmissions(self, list_of_transmissions):
-        self.list_of_transmissions = list_of_transmissions
-        self.list_of_transmissions.sort()
+    def load_transmission_commands(self, transmission_commands):
+        self.transmission_commands = transmission_commands
         log.debug("{:s} loaded transmissions: {}".format(self,
-            self.list_of_transmissions))
+            self.transmission_commands))
 
     def connect_inlink(self, link):
         raise NotImplementedError()
@@ -161,13 +168,15 @@ class MessagePlaybackDevice(NetworkDevice):
         raise NotImplementedError()
 
     def run(self):
-        for time, message_list, outlink in self.list_of_transmissions:
+        for time in sorted(self.transmission_commands):
             delay_before_next_tx_order = time - now()
             log.debug("{:s} sleeping until next transmission".format(self))
             # sleep until next transmission time
             yield hold, self, delay_before_next_tx_order
-            for message in message_list:
-                self.instruct_transmission(message, outlink)
+            for outlink, messages_to_tx in \
+            self.transmission_commands[time].items():
+                for message in messages_to_tx:
+                    self.instruct_transmission(message, outlink)
 
 
 class Switch(NetworkDevice):
