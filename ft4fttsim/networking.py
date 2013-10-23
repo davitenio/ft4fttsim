@@ -188,6 +188,10 @@ class Switch(NetworkDevice):
     def forward_messages(self, message_list):
         """
         Forward each message in message_list to the appropriate outlink.
+        Note that forwarding a message from an inlink to an outlink is
+        implemented as creating a new message instance based on the message
+        in the inlink, and transmitting the new message instance on the
+        outlink.
         """
 
         def find_outlinks(destination):
@@ -290,7 +294,7 @@ class Message(Process):
         yield request, self, link
         log.debug("{:s} transmission started".format(self))
         BITS_PER_BYTE = 8
-        # time in microseconds to load the message into the link (it does
+        # time in microseconds to load the message into the link (this does
         # not include the propagation time)
         transmission_time_us = (self.size_bytes * BITS_PER_BYTE /
             float(link.megabits_per_second))
