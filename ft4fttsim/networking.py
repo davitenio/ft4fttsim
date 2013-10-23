@@ -216,10 +216,7 @@ class Switch(NetworkDevice):
             destinations = message.get_destination_list()
             destination_outlinks = find_outlinks(destinations)
             for link in destination_outlinks:
-                new_message = Message(message.get_source(),
-                    message.get_destination_list(),
-                    message.size_bytes,
-                    message.message_type)
+                new_message = Message.from_message(message)
                 self.instruct_transmission(new_message, link)
 
     def run(self):
@@ -264,6 +261,17 @@ class Message(Process):
             self.source, self.destination_list, self.size_bytes,
             self.message_type)
         log.debug("{:s} created".format(self))
+
+    @classmethod
+    def from_message(cls, template_message):
+        """
+        Creates a new message instance using template_message as a template.
+        """
+        new_equivalent_message = cls(template_message.get_source(),
+            template_message.get_destination_list(),
+            template_message.size_bytes,
+            template_message.message_type)
+        return new_equivalent_message
 
     def get_source(self):
         """
