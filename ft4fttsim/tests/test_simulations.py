@@ -254,11 +254,30 @@ class TestMessagePlaybackDeviceToSwitchToRecorder(unittest.TestCase):
     def tearDown(self):
         simlogging.logger.propagate = False
 
-    def test_1_message_forwarded__message_is_received(self):
+    def test_1_message_forwarded_unicast__message_is_received(self):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         tx_start_time = 0
         message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
+        # create a message instance whose destination field is NOT a list
+        messages_to_transmit = [Message(self.player, self.recorder,
+            message_size_bytes, "test")]
+        outlink = self.player.get_outlinks()[0]
+        transmission_command = {outlink: messages_to_transmit}
+        list_of_commands = {tx_start_time: transmission_command}
+        self.player.load_transmission_commands(list_of_commands)
+        simulate(until=float("inf"))
+        received_messages = self.recorder.get_recorded_messages()
+        for tx_message, rx_message in \
+        zip(messages_to_transmit, received_messages):
+            self.assertTrue(tx_message.is_equivalent(rx_message))
+
+    def test_1_message_forwarded_multicast__message_is_received(self):
+        # uncomment the next line to enable logging during this test
+        #simlogging.logger.propagate = True
+        tx_start_time = 0
+        message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
+        # create a message instance whose destination field is a list
         messages_to_transmit = [Message(self.player, [self.recorder],
             message_size_bytes, "test")]
         outlink = self.player.get_outlinks()[0]

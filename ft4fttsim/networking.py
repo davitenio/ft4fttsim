@@ -4,6 +4,7 @@ from SimPy.Simulation import *
 from ethernet import Ethernet
 from exceptions import FT4FTTSimException
 from simlogging import log
+import collections
 
 
 class Link(Resource):
@@ -189,15 +190,22 @@ class Switch(NetworkDevice):
         Forward each message in message_list to the appropriate outlink.
         """
 
-        def find_outlinks(destination_list):
+        def find_outlinks(destination):
             """
             Return a list of the outlinks that have as their endpoint one of
             the network devices in the list destination_list.
             """
             destination_outlinks = []
-            for outlink in self.get_outlinks():
-                if outlink.get_end_point() in destination_list:
-                    destination_outlinks.append(outlink)
+            if isinstance(destination, collections.Iterable):
+                # the destination is multicast
+                for outlink in self.get_outlinks():
+                    if outlink.get_end_point() in destination:
+                        destination_outlinks.append(outlink)
+            else:
+                # the destination is unicast
+                for outlink in self.get_outlinks():
+                    if outlink.get_end_point() == destination:
+                        destination_outlinks.append(outlink)
             return destination_outlinks
 
         for message in message_list:
