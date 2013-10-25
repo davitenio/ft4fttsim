@@ -42,7 +42,7 @@ class TestSingleMessage(Test1Player1Recorder):
         """
         Test1Player1Recorder.setUp(self)
         self.tx_start_time = 0
-        self.message_size_bytes = 1526
+        self.message_size_bytes = 1518
         self.messages_to_transmit = [Message(self.player, self.recorder,
             self.message_size_bytes, "test message")]
         outlink = self.player.get_outlinks()[0]
@@ -71,7 +71,9 @@ class TestSingleMessage(Test1Player1Recorder):
         timestamp = self.recorder.get_recorded_timestamps()[0]
         BITS_PER_BYTE = 8
         # time it should take the message to arrive at recorder in microseconds
-        time_to_destination_in_us = (self.message_size_bytes * BITS_PER_BYTE /
+        time_to_destination_in_us = (
+            (Ethernet.PREAMBLE_SIZE_BYTES + Ethernet.SFD_SIZE_BYTES +
+            self.message_size_bytes) * BITS_PER_BYTE /
             float(self.link_Mbps) + self.link_propagation_delay_us)
         expected_timestamp = self.tx_start_time + time_to_destination_in_us
         self.assertEqual(timestamp, expected_timestamp)

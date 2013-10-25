@@ -205,6 +205,37 @@ class TestNetworkDevice(unittest.TestCase):
             sentinel.message, not_connected_outlink)
 
 
+class TestMessageConstructor(unittest.TestCase):
+
+    def setUp(self):
+        self.minimum_ethernet_frame_size = 64
+        self.maximum_ethernet_frame_size = 1518
+
+    def test_negative_size__raises_exception(self):
+        self.assertRaises(FT4FTTSimException, Message, sentinel.dummy_source,
+            sentinel.dummy_destination, -1, sentinel.dummy_type)
+
+    def test_less_than_minimum_size__raises_exception(self):
+        self.assertRaises(FT4FTTSimException, Message, sentinel.dummy_source,
+            sentinel.dummy_destination, self.minimum_ethernet_frame_size - 1,
+            sentinel.dummy_type)
+
+    def test_equal_minimum_size__does_not_raise_exception(self):
+        # check that FT4FTTSimException is not thrown
+        Message(sentinel.dummy_source, sentinel.dummy_destination,
+            self.minimum_ethernet_frame_size, sentinel.dummy_type)
+
+    def test_greater_than_maximum_size__raises_exception(self):
+        self.assertRaises(FT4FTTSimException, Message, sentinel.dummy_source,
+            sentinel.dummy_destination, self.maximum_ethernet_frame_size + 1,
+            sentinel.dummy_type)
+
+    def test_equal_maximum_size__does_not_raise_exception(self):
+        # check that FT4FTTSimException is not thrown
+        Message(sentinel.dummy_source, sentinel.dummy_destination,
+            self.maximum_ethernet_frame_size, sentinel.dummy_type)
+
+
 class TestMessage(unittest.TestCase):
 
     def setUp(self):

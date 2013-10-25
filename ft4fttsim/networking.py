@@ -254,6 +254,12 @@ class Message(Process):
             size_bytes,
             # models the ethertype field
             msg_type):
+        if not (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
+                Ethernet.MAX_FRAME_SIZE_BYTES):
+            raise FT4FTTSimException(
+                "Message size must be between {} and {}, but is {}".format(
+                Ethernet.MIN_FRAME_SIZE_BYTES, Ethernet.MAX_FRAME_SIZE_BYTES,
+                size_bytes))
         Process.__init__(self)
         self.ID = Message.next_ID
         Message.next_ID += 1
@@ -313,7 +319,8 @@ class Message(Process):
         BITS_PER_BYTE = 8
         # time in microseconds to load the message into the link (this does
         # not include the propagation time)
-        transmission_time_us = (self.size_bytes * BITS_PER_BYTE /
+        transmission_time_us = ((Ethernet.PREAMBLE_SIZE_BYTES +
+            Ethernet.SFD_SIZE_BYTES + self.size_bytes) * BITS_PER_BYTE /
             float(link.megabits_per_second))
         link.put_message(self)
         # wait for the transmission + propagation time to elapse
