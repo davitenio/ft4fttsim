@@ -21,7 +21,10 @@ class Link(Resource):
         Creates a link whose propagation time is propagation_delay_us and
         that operates at a speed of megabits_per_second Mbps.
         """
-        assert propagation_delay_us >= 0
+        if megabits_per_second <= 0:
+            raise FT4FTTSimException("Mbps must be a positive number.")
+        if propagation_delay_us < 0:
+            raise FT4FTTSimException("Propagation delay cannot be negative.")
         Resource.__init__(self, 1)
         self.start_point = None
         self.end_point = None

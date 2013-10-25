@@ -6,6 +6,21 @@ from ft4fttsim.networking import *
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
+class TestLinkConstructor(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_propagation_delay_is_negative__raises_exception(self):
+        self.assertRaises(FT4FTTSimException, Link, 10, -1)
+
+    def test_megabits_per_second_is_zero__raises_exception(self):
+        self.assertRaises(FT4FTTSimException, Link, 0, 1)
+
+    def test_megabits_per_second_is_negative__raises_exception(self):
+        self.assertRaises(FT4FTTSimException, Link, -1, 1)
+
+
 class TestLink(unittest.TestCase):
 
     def setUp(self):
