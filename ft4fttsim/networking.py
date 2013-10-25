@@ -183,7 +183,7 @@ class MessagePlaybackDevice(NetworkDevice):
             # sleep until next transmission time
             yield hold, self, delay_before_next_tx_order
             for outlink, messages_to_tx in \
-            self.transmission_commands[time].items():
+                    self.transmission_commands[time].items():
                 for message in messages_to_tx:
                     self.instruct_transmission(message, outlink)
 
