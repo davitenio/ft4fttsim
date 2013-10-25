@@ -221,7 +221,7 @@ class Switch(NetworkDevice):
             return destination_outlinks
 
         for message in message_list:
-            destinations = message.get_destination_list()
+            destinations = message.get_destination()
             destination_outlinks = find_outlinks(destinations)
             for link in destination_outlinks:
                 new_message = Message.from_message(message)
@@ -238,22 +238,31 @@ class Switch(NetworkDevice):
 
 class Message(Process):
     """
-    Class for messages sent by a NetworkDevice.
+    Class for messages that model Ethernet frames.
+
     """
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self,
-            # models the MAC source address
-            source,
-            # list of intended receivers of the message instance. It models
-            # the MAC destination address. It is a list to support
-            # multicast addressing.
-            destination_list,
-            # size of the message instance in bytes
-            size_bytes,
-            # models the ethertype field
-            msg_type):
+    def __init__(self, source, destination, size_bytes, message_type):
+        """
+        Create an instance of Message.
+
+        Arguments:
+            source: usually an instance of NetworkDevice. It models the
+                MAC source address field of an Ethernet frame.
+            destination: usually an instance of NetworkDevice or a list of
+                instances of NetworkDevice. It models the MAC destination
+                address field of an Ethernet frame. If it is iterable, then it
+                models a multicast address, otherwise it models a unicast
+                address.
+            size_bytes: indicates the size in bytes of the Ethernet frame
+                modeled by the Message instance created. The size does not
+                include the Ethernet preamble, the start of frame delimiter, or
+                an IEEE 802.1Q tag.
+            message_type: models the Ethertype field.
+
+        """
         if not (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
                 Ethernet.MAX_FRAME_SIZE_BYTES):
             raise FT4FTTSimException(
@@ -267,13 +276,11 @@ class Message(Process):
         self.source = source
         # destination of the message. It models the destination MAC address. It
         # is a list to allow multicast addressing.
-        self.destination_list = destination_list
-        assert (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes
-            <= Ethernet.MAX_FRAME_SIZE_BYTES)
+        self.destination = destination
         self.size_bytes = size_bytes
-        self.message_type = msg_type
+        self.message_type = message_type
         self.name = "({:03d}, {:s}, {:s}, {:d}, {:s})".format(self.ID,
-            self.source, self.destination_list, self.size_bytes,
+            self.source, self.destination, self.size_bytes,
             self.message_type)
         log.debug("{:s} created".format(self))
 
@@ -281,9 +288,10 @@ class Message(Process):
     def from_message(cls, template_message):
         """
         Creates a new message instance using template_message as a template.
+
         """
         new_equivalent_message = cls(template_message.get_source(),
-            template_message.get_destination_list(),
+            template_message.get_destination(),
             template_message.size_bytes,
             template_message.message_type)
         return new_equivalent_message
@@ -295,12 +303,12 @@ class Message(Process):
         """
         return self.source
 
-    def get_destination_list(self):
+    def get_destination(self):
         """
         Return the destination NetworkDevice for the message, which models
         the destination MAC address.
         """
-        return self.destination_list
+        return self.destination
 
     def get_size_in_bytes(self):
         return self.size_bytes
@@ -343,7 +351,7 @@ class Message(Process):
         ID.
         """
         return (self.get_source() == message.get_source() and
-            self.get_destination_list() == message.get_destination_list() and
+            self.get_destination() == message.get_destination() and
             self.get_size_in_bytes() == message.get_size_in_bytes() and
             self.get_message_type() == message.get_message_type())
 
