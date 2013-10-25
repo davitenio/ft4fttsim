@@ -27,6 +27,7 @@ class Link(Resource):
         self.end_point = None
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
+        self.message_is_transmitted = SimEvent()
         # message that is being transmitted in the link
         self.message = None
 
@@ -126,7 +127,8 @@ class MessageRecordingDevice(NetworkDevice):
         while True:
             log.debug("{:s} sleeping until next reception".format(self))
             # sleep until a message notifies that it has finished transmission
-            yield passivate, self
+            yield waitevent, self, [link.message_is_transmitted for link in
+                self.get_inlinks()]
             received_messages = self.read_inlinks()
             log.debug("{:s} received {}".format(self,
                 received_messages))
@@ -222,7 +224,8 @@ class Switch(NetworkDevice):
     def run(self):
         while True:
             # sleep until a message notifies that it has finished transmission
-            yield passivate, self
+            yield waitevent, self, [link.message_is_transmitted for link in
+                self.get_inlinks()]
             received_messages = self.read_inlinks()
             self.forward_messages(received_messages)
 
@@ -312,7 +315,7 @@ class Message(Process):
         # transmission finished, notify the link's end point, but do not
         # release the link yet
         log.debug("{:s} transmission finished".format(self))
-        reactivate(link.end_point)
+        link.message_is_transmitted.signal()
         # wait for the duration of the ethernet interframe gap to elapse
         IFG_duration_us = (Ethernet.IFG_SIZE_BYTES * BITS_PER_BYTE /
             float(link.megabits_per_second))

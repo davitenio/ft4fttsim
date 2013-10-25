@@ -2,7 +2,7 @@
 
 from networking import NetworkDevice, Message
 from ethernet import Ethernet
-from SimPy.Simulation import passivate, now, activate, hold
+from SimPy.Simulation import passivate, now, activate, hold, waitevent
 
 
 class Master(NetworkDevice):
@@ -72,7 +72,8 @@ class Slave(NetworkDevice):
     def run(self):
         while True:
             # sleep until a message is received
-            yield passivate, self
+            yield waitevent, self, [link.message_is_transmitted for link in
+                self.get_inlinks()]
             received_messages = self.read_inlinks()
             has_received_trigger_message = False
             for message in received_messages:
