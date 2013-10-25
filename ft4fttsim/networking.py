@@ -35,9 +35,13 @@ class Link(Resource):
         self.message = None
 
     def set_start_point(self, device):
+        if self.start_point != None:
+            raise FT4FTTSimException("Link already has a start point.")
         self.start_point = device
 
     def set_end_point(self, device):
+        if self.end_point != None:
+            raise FT4FTTSimException("Link already has an end point.")
         self.end_point = device
 
     def get_end_point(self):
@@ -47,6 +51,7 @@ class Link(Resource):
         return self.message != None
 
     def put_message(self, message):
+        assert self.message == None
         self.message = message
 
     def get_message(self):
@@ -78,12 +83,10 @@ class NetworkDevice(Process):
 
     def connect_outlink_list(self, link_list):
         for link in link_list:
-            link.set_start_point(self)
             self.connect_outlink(link)
 
     def connect_inlink_list(self, link_list):
         for link in link_list:
-            link.set_end_point(self)
             self.connect_inlink(link)
 
     def get_outlinks(self):
