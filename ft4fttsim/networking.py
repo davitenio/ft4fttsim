@@ -9,17 +9,32 @@ import collections
 
 class Link(Resource):
     """
-    Class for links used in the FT4FTT network. Objects of this class may
-    interconnect arbitrary NetworkDevices.
+    Class whose instances model links used in an Ethernet network.
+
+    A Link object models a physical link between at most 2 network devices
+    (objects of class NetworkDevice). A Link object has a certain transmission
+    speed (expressed in megabits per second) and propagation delay (expressed
+    in microseconds). Links are directional, i.e., they have a single start
+    point and a single end point, and messages that are being modeled as being
+    transmitted can only be transmitted from the start point to the end point,
+    but not in the opposite direction. At any one time at most one message can
+    be transmitted through a link. If the transmission of additional messages
+    is ordered through the link, then they will be queued.
+
     """
-    def __init__(self,
-            # speed of the link in megabits per second
-            megabits_per_second,
-            # propagation delay of the link in microseconds
-            propagation_delay_us):
+    def __init__(self, megabits_per_second, propagation_delay_us):
         """
-        Creates a link whose propagation time is propagation_delay_us and
-        that operates at a speed of megabits_per_second Mbps.
+        Create a new instance of class Link.
+
+        Arguments:
+            megabits_per_second: Speed of the link in megabits per second.
+            propagation_delay_us: Propagation delay of the link in
+                microseconds.
+
+        Raises:
+            FT4FTTSimException: error if the arguments have invalid values,
+                e.g., a negative value for the propagation delay.
+
         """
         if megabits_per_second <= 0:
             raise FT4FTTSimException("Mbps must be a positive number.")
@@ -35,11 +50,27 @@ class Link(Resource):
         self.message = None
 
     def set_start_point(self, device):
+        """
+        Set the start point of the link.
+
+        Arguments:
+            device: The NetworkDevice instance to be set as the start point for
+                the link, i.e., the transmitter for this link.
+
+        """
         if self.start_point != None:
             raise FT4FTTSimException("Link already has a start point.")
         self.start_point = device
 
     def set_end_point(self, device):
+        """
+        Set the end point of the link.
+
+        Arguments:
+            device: The NetworkDevice instance to be set as the end point for
+                the link, i.e., the receiver for this link.
+
+        """
         if self.end_point != None:
             raise FT4FTTSimException("Link already has an end point.")
         self.end_point = device
