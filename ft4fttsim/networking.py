@@ -147,6 +147,18 @@ class NetworkDevice(Process):
 
 
 class MessageRecordingDevice(NetworkDevice):
+    """
+    Class whose instances model a passive receiver.
+
+    Instances of this class cannot transmit messages. All they do is wait for
+    the reception of a message on any one of their inlinks and record the
+    received message in an internal buffer together with a timestamp of the
+    reception time.
+
+    The main purpose of instances of this class is to make testing easier.
+
+    """
+
     def __init__(self, name):
         NetworkDevice.__init__(self, name)
         self.reception_records = {}
@@ -187,13 +199,44 @@ class MessageRecordingDevice(NetworkDevice):
 
 
 class MessagePlaybackDevice(NetworkDevice):
+    """
+    Instances of this class model devices that transmit prespecified messages.
+
+    Instances of this class cannot receive messages. What they do is accept a
+    series of transmission commands and then execute them. Each transmission
+    command specifies what message to transmit at what time and through which
+    outlink.
+
+    The main purpose of instances of this class is to make testing easier.
+
+    """
+
     def __init__(self, name):
-        """
-        """
         NetworkDevice.__init__(self, name)
         self.transmission_commands = {}
 
     def load_transmission_commands(self, transmission_commands):
+        """
+        Load the transmission commands to execute once the run method is
+        activated by SimPy.
+
+        Arguments:
+            transmission_commands: The transmission commands to execute once
+                the run method is activated by the simulator. This argument
+                should be a dictionary whose keys are instants of time when
+                message transmissions should be instructed. Each of the values
+                of the dictionary should be another dictionary whose keys are
+                the outlinks on which transmissions should be ordered and
+                whose values are lists of messages to be transmitted through
+                the corresponding outlink. Example:
+
+                {
+                    0.0:  {outlink1: [message1, message2]},
+                    12.0: {outlink1: [message3]},
+                    13.5: {outlink3: [message4, message5, message6]}
+                }
+
+        """
         self.transmission_commands = transmission_commands
         log.debug("{:s} loaded transmissions: {}".format(self,
             self.transmission_commands))
@@ -221,12 +264,14 @@ class MessagePlaybackDevice(NetworkDevice):
 
 class Switch(NetworkDevice):
     """
-    Class for ethernet switches.
+    Class whose instances model Ethernet switches.
+
     """
 
     def forward_messages(self, message_list):
         """
-        Forward each message in message_list to the appropriate outlink.
+        Forward each message in 'message_list' to the appropriate outlink.
+
         Note that forwarding a message from an inlink to an outlink is
         implemented as creating a new message instance based on the message
         in the inlink, and transmitting the new message instance on the
@@ -235,8 +280,17 @@ class Switch(NetworkDevice):
 
         def find_outlinks(destination):
             """
-            Return a list of the outlinks that have as their endpoint one of
-            the network devices in the list destination_list.
+            Return a list of the outlinks that have as their endpoint
+            'destination'.
+
+            Arguments:
+                destination: an instance of class NetworkDevice or an iterable
+                of NetworkDevice instances.
+
+            Returns:
+                A list of the outlinks that have as their end point one of the
+                devices in 'destination'.
+
             """
             destination_outlinks = []
             if isinstance(destination, collections.Iterable):
