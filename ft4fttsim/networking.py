@@ -300,7 +300,7 @@ class Switch(NetworkDevice):
             return destination_outlinks
 
         for message in message_list:
-            destinations = message.get_destination()
+            destinations = message.destination
             destination_outlinks = find_outlinks(destinations)
             for link in destination_outlinks:
                 new_message = Message.from_message(message)
@@ -369,31 +369,11 @@ class Message(Process):
         Creates a new message instance using template_message as a template.
 
         """
-        new_equivalent_message = cls(template_message.get_source(),
-            template_message.get_destination(),
+        new_equivalent_message = cls(template_message.source,
+            template_message.destination,
             template_message.size_bytes,
             template_message.message_type)
         return new_equivalent_message
-
-    def get_source(self):
-        """
-        Return the source NetworkDevice for the message, which models the
-        source MAC address.
-        """
-        return self.source
-
-    def get_destination(self):
-        """
-        Return the destination NetworkDevice for the message, which models
-        the destination MAC address.
-        """
-        return self.destination
-
-    def get_size_in_bytes(self):
-        return self.size_bytes
-
-    def get_message_type(self):
-        return self.message_type
 
     def transmit(self, link):
         """
@@ -429,10 +409,10 @@ class Message(Process):
         Returns true if self and message are identical except for the message
         ID.
         """
-        return (self.get_source() == message.get_source() and
-            self.get_destination() == message.get_destination() and
-            self.get_size_in_bytes() == message.get_size_in_bytes() and
-            self.get_message_type() == message.get_message_type())
+        return (self.source == message.source and
+            self.destination == message.destination and
+            self.size_bytes == message.size_bytes and
+            self.message_type == message.message_type)
 
     def is_trigger_message(self):
         return self.message_type == "TM"

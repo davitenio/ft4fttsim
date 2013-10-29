@@ -243,14 +243,14 @@ class TestMessage(unittest.TestCase):
             Ethernet.MAX_FRAME_SIZE_BYTES,
             sentinel.message_type)
 
-    def test_get_destination__message_created__returns_expected_dst(self):
+    def test_destination__message_created__returns_expected_dst(self):
         expected_destination = sentinel.destinations
-        actual_destination = self.message.get_destination()
+        actual_destination = self.message.destination
         self.assertEqual(actual_destination, expected_destination)
 
     def test_get_source__message_created__returns_expected_source(self):
         expected_source = sentinel.source
-        actual_source = self.message.get_source()
+        actual_source = self.message.source
         self.assertEqual(actual_source, expected_source)
 
 
