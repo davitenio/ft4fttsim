@@ -45,7 +45,7 @@ class TestSingleMessage(Test1Player1Recorder):
         self.message_size_bytes = 1518
         self.messages_to_transmit = [Message(self.player, self.recorder,
             self.message_size_bytes, "test message")]
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {self.tx_start_time: transmission_command}
         self.player.load_transmission_commands(list_of_commands)
@@ -93,7 +93,7 @@ class TestTwoMessages(Test1Player1Recorder):
         self.messages_to_transmit1 = [Message(self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES,
             "message at time {:d}".format(tx_start_time1))]
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         list_of_commands = {}
         transmission_command0 = {outlink: self.messages_to_transmit0}
         list_of_commands[tx_start_time0] = transmission_command0
@@ -131,7 +131,7 @@ class TestEightMessages(Test1Player1Recorder):
         Set up the player sending 8 messages.
         """
         Test1Player1Recorder.setUp(self)
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         transmission_start_times = range(8)
         self.all_messages_to_transmit = []
         list_of_commands = {}
@@ -195,7 +195,7 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
             Message(self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 2 msg 1"),
             ]
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         list_of_commands = {}
         transmission_command0 = {outlink: self.messages_to_transmit0}
         list_of_commands[tx_start_time0] = transmission_command0

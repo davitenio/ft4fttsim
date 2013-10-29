@@ -27,7 +27,7 @@ class Master(NetworkDevice):
         self.EC_count = 0
 
     def broadcast_trigger_message(self):
-        for outlink in self.get_outlinks():
+        for outlink in self.outlinks:
             trigger_message = Message(self, self.slaves,
                 Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
             self.instruct_transmission(trigger_message, outlink)
@@ -73,7 +73,7 @@ class Slave(NetworkDevice):
         while True:
             # sleep until a message is received
             yield waitevent, self, [link.message_is_transmitted for link in
-                self.get_inlinks()]
+                self.inlinks]
             received_messages = self.read_inlinks()
             has_received_trigger_message = False
             for message in received_messages:
@@ -81,7 +81,7 @@ class Slave(NetworkDevice):
                     has_received_trigger_message = True
             if has_received_trigger_message:
                 # transmit on all outlinks
-                self.transmit_synchronous_messages(2, self.get_outlinks())
+                self.transmit_synchronous_messages(2, self.outlinks)
                 # wait before we order the next transmission
                 delay_before_next_tx_order = 0.0
                 yield hold, self, delay_before_next_tx_order

@@ -120,15 +120,9 @@ class NetworkDevice(Process):
         for link in link_list:
             self.connect_inlink(link)
 
-    def get_outlinks(self):
-        return self.outlinks
-
-    def get_inlinks(self):
-        return self.inlinks
-
     def read_inlinks(self):
         received_messages = []
-        for inlink in self.get_inlinks():
+        for inlink in self.inlinks:
             if inlink.has_message():
                 message = inlink.get_message()
                 received_messages.append(message)
@@ -137,7 +131,7 @@ class NetworkDevice(Process):
     def instruct_transmission(self, message, outlink):
         log.debug("{:s} instructing transmission of {} on {}".format(self,
             message, outlink))
-        if outlink not in self.get_outlinks():
+        if outlink not in self.outlinks:
             raise FT4FTTSimException("{} is not an outlink of {}".format(
                 outlink, self))
         activate(message, message.transmit(outlink))
@@ -177,7 +171,7 @@ class MessageRecordingDevice(NetworkDevice):
             log.debug("{:s} sleeping until next reception".format(self))
             # sleep until a message notifies that it has finished transmission
             yield waitevent, self, [link.message_is_transmitted for link in
-                self.get_inlinks()]
+                self.inlinks]
             received_messages = self.read_inlinks()
             log.debug("{:s} received {}".format(self,
                 received_messages))
@@ -295,12 +289,12 @@ class Switch(NetworkDevice):
             destination_outlinks = []
             if isinstance(destination, collections.Iterable):
                 # the destination is multicast
-                for outlink in self.get_outlinks():
+                for outlink in self.outlinks:
                     if outlink.get_end_point() in destination:
                         destination_outlinks.append(outlink)
             else:
                 # the destination is unicast
-                for outlink in self.get_outlinks():
+                for outlink in self.outlinks:
                     if outlink.get_end_point() == destination:
                         destination_outlinks.append(outlink)
             return destination_outlinks
@@ -316,7 +310,7 @@ class Switch(NetworkDevice):
         while True:
             # sleep until a message notifies that it has finished transmission
             yield waitevent, self, [link.message_is_transmitted for link in
-                self.get_inlinks()]
+                self.inlinks]
             received_messages = self.read_inlinks()
             self.forward_messages(received_messages)
 

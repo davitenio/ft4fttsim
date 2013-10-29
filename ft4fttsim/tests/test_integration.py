@@ -28,19 +28,19 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
     def test_get_outlinks__connect_1_outlink__returns_new_outlink(self):
         outlink = Link(10, 0)
         self.device.connect_outlink(outlink)
-        self.assertEqual(self.device.get_outlinks(), [outlink])
+        self.assertEqual(self.device.outlinks, [outlink])
 
     def test_get_outlinks__connect_2_outlinks__returns_new_outlinks(self):
         outlink1 = Link(10, 0)
         outlink2 = Link(10, 0)
         self.device.connect_outlink(outlink1)
         self.device.connect_outlink(outlink2)
-        self.assertEqual(self.device.get_outlinks(), [outlink1, outlink2])
+        self.assertEqual(self.device.outlinks, [outlink1, outlink2])
 
     def test_get_outlinks__connect_outlink_list_2__returns_new_outlinks(self):
         outlinks = [Link(10, 0) for num_links in range(2)]
         self.device.connect_outlink_list(outlinks)
-        self.assertEqual(self.device.get_outlinks(), outlinks)
+        self.assertEqual(self.device.outlinks, outlinks)
 
     def test_get_outlinks__connect_3_outlinks__returns_new_outlinks(self):
         outlink1 = Link(10, 0)
@@ -49,30 +49,30 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.device.connect_outlink(outlink1)
         self.device.connect_outlink(outlink2)
         self.device.connect_outlink(outlink3)
-        self.assertEqual(self.device.get_outlinks(),
+        self.assertEqual(self.device.outlinks,
             [outlink1, outlink2, outlink3])
 
     def test_get_outlinks__connect_outlink_list_20__returns_new_outlinks(self):
         outlinks = [Link(10, 0) for num_links in range(20)]
         self.device.connect_outlink_list(outlinks)
-        self.assertEqual(self.device.get_outlinks(), outlinks)
+        self.assertEqual(self.device.outlinks, outlinks)
 
     def test_get_inlinks__connect_1_inlink__returns_new_inlink(self):
         inlink = Link(10, 0)
         self.device.connect_inlink(inlink)
-        self.assertEqual(self.device.get_inlinks(), [inlink])
+        self.assertEqual(self.device.inlinks, [inlink])
 
     def test_get_inlinks__connect_2_inlinks__returns_new_inlinks(self):
         inlink1 = Link(10, 0)
         inlink2 = Link(10, 0)
         self.device.connect_inlink(inlink1)
         self.device.connect_inlink(inlink2)
-        self.assertEqual(self.device.get_inlinks(), [inlink1, inlink2])
+        self.assertEqual(self.device.inlinks, [inlink1, inlink2])
 
     def test_get_inlinks__connect_2_inlinks_at_once__returns_new_inlinks(self):
         inlinks = [Link(10, 0) for num_links in range(2)]
         self.device.connect_inlink_list(inlinks)
-        self.assertEqual(self.device.get_inlinks(), inlinks)
+        self.assertEqual(self.device.inlinks, inlinks)
 
     def test_get_inlinks__connect_3_inlinks__returns_new_inlinks(self):
         inlink1 = Link(10, 0)
@@ -81,13 +81,13 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.device.connect_inlink(inlink1)
         self.device.connect_inlink(inlink2)
         self.device.connect_inlink(inlink3)
-        self.assertEqual(self.device.get_inlinks(),
+        self.assertEqual(self.device.inlinks,
             [inlink1, inlink2, inlink3])
 
     def test_get_inlinks__connect_inlink_list_20__returns_new_inlinks(self):
         inlinks = [Link(10, 0) for num_links in range(20)]
         self.device.connect_inlink_list(inlinks)
-        self.assertEqual(self.device.get_inlinks(), inlinks)
+        self.assertEqual(self.device.inlinks, inlinks)
 
     def test_read_inlinks__put_message_on_1_inlink__returns_message(self):
         link = Link(10, 0)

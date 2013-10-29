@@ -56,8 +56,8 @@ class TestOneMessagePerOutlink(Test1Player2Recorder):
             Ethernet.MAX_FRAME_SIZE_BYTES, "message for recorder1")]
         self.messages_to_transmit2 = [Message(self.player, self.recorder2,
             Ethernet.MAX_FRAME_SIZE_BYTES, "message for recorder2")]
-        outlink1 = self.player.get_outlinks()[0]
-        outlink2 = self.player.get_outlinks()[1]
+        outlink1 = self.player.outlinks[0]
+        outlink2 = self.player.outlinks[1]
         list_of_commands = {}
         transmission_command1 = {outlink1: self.messages_to_transmit1}
         list_of_commands[tx_start_time1] = transmission_command1

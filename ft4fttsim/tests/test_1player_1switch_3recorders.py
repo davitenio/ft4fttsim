@@ -72,7 +72,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         self.messages_to_transmit = [Message(self.player,
             [self.recorder1, self.recorder3],
             message_size_bytes, "message for recorder 1 and 3")]
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {tx_start_time: transmission_command}
         self.player.load_transmission_commands(list_of_commands)
