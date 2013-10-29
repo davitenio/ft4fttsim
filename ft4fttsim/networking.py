@@ -41,15 +41,20 @@ class Link(Resource):
         if propagation_delay_us < 0:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
         Resource.__init__(self, 1)
-        self.start_point = None
-        self.end_point = None
+        self._start_point = None
+        self._end_point = None
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
         self.message_is_transmitted = SimEvent()
         # message that is being transmitted in the link
         self.message = None
 
-    def set_start_point(self, device):
+    @property
+    def start_point(self):
+        return self._start_point
+
+    @start_point.setter
+    def start_point(self, device):
         """
         Set the start point of the link.
 
@@ -58,11 +63,16 @@ class Link(Resource):
                 the link, i.e., the transmitter for this link.
 
         """
-        if self.start_point != None:
+        if self._start_point != None:
             raise FT4FTTSimException("Link already has a start point.")
-        self.start_point = device
+        self._start_point = device
 
-    def set_end_point(self, device):
+    @property
+    def end_point(self):
+        return self._end_point
+
+    @end_point.setter
+    def end_point(self, device):
         """
         Set the end point of the link.
 
@@ -71,12 +81,9 @@ class Link(Resource):
                 the link, i.e., the receiver for this link.
 
         """
-        if self.end_point != None:
+        if self._end_point != None:
             raise FT4FTTSimException("Link already has an end point.")
-        self.end_point = device
-
-    def get_end_point(self):
-        return self.end_point
+        self._end_point = device
 
     def has_message(self):
         return self.message != None
@@ -91,7 +98,7 @@ class Link(Resource):
         return tmp
 
     def __str__(self):
-        return "{:s}->{:s}".format(self.start_point, self.end_point)
+        return "{:s}->{:s}".format(self._start_point, self._end_point)
 
 
 class NetworkDevice(Process):
@@ -105,11 +112,11 @@ class NetworkDevice(Process):
         self.name = name
 
     def connect_outlink(self, link):
-        link.set_start_point(self)
+        link.start_point = self
         self.outlinks.append(link)
 
     def connect_inlink(self, link):
-        link.set_end_point(self)
+        link.end_point = self
         self.inlinks.append(link)
 
     def connect_outlink_list(self, link_list):
@@ -290,12 +297,12 @@ class Switch(NetworkDevice):
             if isinstance(destination, collections.Iterable):
                 # the destination is multicast
                 for outlink in self.outlinks:
-                    if outlink.get_end_point() in destination:
+                    if outlink.end_point in destination:
                         destination_outlinks.append(outlink)
             else:
                 # the destination is unicast
                 for outlink in self.outlinks:
-                    if outlink.get_end_point() == destination:
+                    if outlink.end_point == destination:
                         destination_outlinks.append(outlink)
             return destination_outlinks
 

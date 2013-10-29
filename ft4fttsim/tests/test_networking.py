@@ -27,17 +27,7 @@ class TestLink(unittest.TestCase):
         self.link = Link(10, 0)
 
     def test_get_end_point__link_created__end_point_is_None(self):
-        self.assertEqual(self.link.get_end_point(), None)
-
-    def test_set_end_point_twice__raises_exception(self):
-        self.link.set_end_point(sentinel.dummy_device1)
-        self.assertRaises(FT4FTTSimException, self.link.set_end_point,
-            sentinel.dummy_device2)
-
-    def test_set_start_point_twice__raises_exception(self):
-        self.link.set_start_point(sentinel.dummy_device1)
-        self.assertRaises(FT4FTTSimException, self.link.set_start_point,
-            sentinel.dummy_device2)
+        self.assertEqual(self.link.end_point, None)
 
     def test_has_message__link_created__returns_false(self):
         self.assertFalse(self.link.has_message())
