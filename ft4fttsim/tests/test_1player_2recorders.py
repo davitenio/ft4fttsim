@@ -69,14 +69,14 @@ class TestOneMessagePerOutlink(Test1Player2Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages1 = self.recorder1.get_recorded_messages()
+        received_messages1 = self.recorder1.recorded_messages
         self.assertEqual(self.messages_to_transmit1, received_messages1)
 
     def test_recorder2_gets_correct_message(self):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages2 = self.recorder2.get_recorded_messages()
+        received_messages2 = self.recorder2.recorded_messages
         self.assertEqual(self.messages_to_transmit2, received_messages2)
 
 

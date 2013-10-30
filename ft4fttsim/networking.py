@@ -174,16 +174,15 @@ class MessageRecordingDevice(NetworkDevice):
             self.reception_records[timestamp] = received_messages
             log.debug("{:s} recorded {}".format(self, self.reception_records))
 
-    def get_recorded_messages(self):
-        """
-        Return a list of all recorded messages sorted by timestamp.
-        """
+    @property
+    def recorded_messages(self):
         messages = []
         for time in sorted(self.reception_records):
             messages.extend(self.reception_records[time])
         return messages
 
-    def get_recorded_timestamps(self):
+    @property
+    def recorded_timestamps(self):
         return self.reception_records.keys()
 
 

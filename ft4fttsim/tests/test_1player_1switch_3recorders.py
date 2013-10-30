@@ -84,7 +84,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder1.get_recorded_messages()
+        received_messages = self.recorder1.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
@@ -95,7 +95,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder3.get_recorded_messages()
+        received_messages = self.recorder3.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
@@ -106,7 +106,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder2.get_recorded_messages()
+        received_messages = self.recorder2.recorded_messages
         self.assertNotIn(self.messages_to_transmit[0], received_messages)
 
 

@@ -57,7 +57,7 @@ class TestSingleMessage(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(self.messages_to_transmit, received_messages)
 
     def test_message_played__arrives_when_expected(self):
@@ -68,7 +68,7 @@ class TestSingleMessage(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        timestamp = self.recorder.get_recorded_timestamps()[0]
+        timestamp = self.recorder.recorded_timestamps[0]
         BITS_PER_BYTE = 8
         # time it should take the message to arrive at recorder in microseconds
         time_to_destination_in_us = (
@@ -108,7 +108,7 @@ class TestTwoMessages(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 2)
 
     def test_2_messages_played__equals_the_2_messages_recorded(self):
@@ -118,7 +118,7 @@ class TestTwoMessages(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
             self.messages_to_transmit1)
         self.assertEqual(all_messages_transmitted, received_messages)
@@ -152,7 +152,7 @@ class TestEightMessages(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(set(self.all_messages_to_transmit),
             set(received_messages))
 
@@ -164,7 +164,7 @@ class TestEightMessages(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(self.all_messages_to_transmit, received_messages)
 
 
@@ -212,7 +212,7 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 6)
 
     def test_3_batches_of_2_messages_played__equals_messages_recorded(self):
@@ -223,7 +223,7 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
             self.messages_to_transmit1 + self.messages_to_transmit2)
         self.assertEqual(all_messages_transmitted, received_messages)
