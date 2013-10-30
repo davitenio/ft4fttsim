@@ -41,15 +41,20 @@ class Link(Resource):
         if propagation_delay_us < 0:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
         Resource.__init__(self, 1)
-        self.start_point = None
-        self.end_point = None
+        self._start_point = None
+        self._end_point = None
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
         self.message_is_transmitted = SimEvent()
         # message that is being transmitted in the link
         self.message = None
 
-    def set_start_point(self, device):
+    @property
+    def start_point(self):
+        return self._start_point
+
+    @start_point.setter
+    def start_point(self, device):
         """
         Set the start point of the link.
 
@@ -58,11 +63,16 @@ class Link(Resource):
                 the link, i.e., the transmitter for this link.
 
         """
-        if self.start_point != None:
+        if self._start_point != None:
             raise FT4FTTSimException("Link already has a start point.")
-        self.start_point = device
+        self._start_point = device
 
-    def set_end_point(self, device):
+    @property
+    def end_point(self):
+        return self._end_point
+
+    @end_point.setter
+    def end_point(self, device):
         """
         Set the end point of the link.
 
@@ -71,27 +81,12 @@ class Link(Resource):
                 the link, i.e., the receiver for this link.
 
         """
-        if self.end_point != None:
+        if self._end_point != None:
             raise FT4FTTSimException("Link already has an end point.")
-        self.end_point = device
-
-    def get_end_point(self):
-        return self.end_point
-
-    def has_message(self):
-        return self.message != None
-
-    def put_message(self, message):
-        assert self.message == None
-        self.message = message
-
-    def get_message(self):
-        tmp = self.message
-        self.message = None
-        return tmp
+        self._end_point = device
 
     def __str__(self):
-        return "{:s}->{:s}".format(self.start_point, self.end_point)
+        return "{:s}->{:s}".format(self._start_point, self._end_point)
 
 
 class NetworkDevice(Process):
@@ -105,11 +100,11 @@ class NetworkDevice(Process):
         self.name = name
 
     def connect_outlink(self, link):
-        link.set_start_point(self)
+        link.start_point = self
         self.outlinks.append(link)
 
     def connect_inlink(self, link):
-        link.set_end_point(self)
+        link.end_point = self
         self.inlinks.append(link)
 
     def connect_outlink_list(self, link_list):
@@ -120,24 +115,18 @@ class NetworkDevice(Process):
         for link in link_list:
             self.connect_inlink(link)
 
-    def get_outlinks(self):
-        return self.outlinks
-
-    def get_inlinks(self):
-        return self.inlinks
-
     def read_inlinks(self):
         received_messages = []
-        for inlink in self.get_inlinks():
-            if inlink.has_message():
-                message = inlink.get_message()
-                received_messages.append(message)
+        for inlink in self.inlinks:
+            if inlink.message is not None:
+                received_messages.append(inlink.message)
+                inlink.message = None
         return received_messages
 
     def instruct_transmission(self, message, outlink):
         log.debug("{:s} instructing transmission of {} on {}".format(self,
             message, outlink))
-        if outlink not in self.get_outlinks():
+        if outlink not in self.outlinks:
             raise FT4FTTSimException("{} is not an outlink of {}".format(
                 outlink, self))
         activate(message, message.transmit(outlink))
@@ -177,7 +166,7 @@ class MessageRecordingDevice(NetworkDevice):
             log.debug("{:s} sleeping until next reception".format(self))
             # sleep until a message notifies that it has finished transmission
             yield waitevent, self, [link.message_is_transmitted for link in
-                self.get_inlinks()]
+                self.inlinks]
             received_messages = self.read_inlinks()
             log.debug("{:s} received {}".format(self,
                 received_messages))
@@ -185,16 +174,15 @@ class MessageRecordingDevice(NetworkDevice):
             self.reception_records[timestamp] = received_messages
             log.debug("{:s} recorded {}".format(self, self.reception_records))
 
-    def get_recorded_messages(self):
-        """
-        Return a list of all recorded messages sorted by timestamp.
-        """
+    @property
+    def recorded_messages(self):
         messages = []
         for time in sorted(self.reception_records):
             messages.extend(self.reception_records[time])
         return messages
 
-    def get_recorded_timestamps(self):
+    @property
+    def recorded_timestamps(self):
         return self.reception_records.keys()
 
 
@@ -295,18 +283,18 @@ class Switch(NetworkDevice):
             destination_outlinks = []
             if isinstance(destination, collections.Iterable):
                 # the destination is multicast
-                for outlink in self.get_outlinks():
-                    if outlink.get_end_point() in destination:
+                for outlink in self.outlinks:
+                    if outlink.end_point in destination:
                         destination_outlinks.append(outlink)
             else:
                 # the destination is unicast
-                for outlink in self.get_outlinks():
-                    if outlink.get_end_point() == destination:
+                for outlink in self.outlinks:
+                    if outlink.end_point == destination:
                         destination_outlinks.append(outlink)
             return destination_outlinks
 
         for message in message_list:
-            destinations = message.get_destination()
+            destinations = message.destination
             destination_outlinks = find_outlinks(destinations)
             for link in destination_outlinks:
                 new_message = Message.from_message(message)
@@ -316,7 +304,7 @@ class Switch(NetworkDevice):
         while True:
             # sleep until a message notifies that it has finished transmission
             yield waitevent, self, [link.message_is_transmitted for link in
-                self.get_inlinks()]
+                self.inlinks]
             received_messages = self.read_inlinks()
             self.forward_messages(received_messages)
 
@@ -375,31 +363,11 @@ class Message(Process):
         Creates a new message instance using template_message as a template.
 
         """
-        new_equivalent_message = cls(template_message.get_source(),
-            template_message.get_destination(),
+        new_equivalent_message = cls(template_message.source,
+            template_message.destination,
             template_message.size_bytes,
             template_message.message_type)
         return new_equivalent_message
-
-    def get_source(self):
-        """
-        Return the source NetworkDevice for the message, which models the
-        source MAC address.
-        """
-        return self.source
-
-    def get_destination(self):
-        """
-        Return the destination NetworkDevice for the message, which models
-        the destination MAC address.
-        """
-        return self.destination
-
-    def get_size_in_bytes(self):
-        return self.size_bytes
-
-    def get_message_type(self):
-        return self.message_type
 
     def transmit(self, link):
         """
@@ -415,7 +383,7 @@ class Message(Process):
         transmission_time_us = ((Ethernet.PREAMBLE_SIZE_BYTES +
             Ethernet.SFD_SIZE_BYTES + self.size_bytes) * BITS_PER_BYTE /
             float(link.megabits_per_second))
-        link.put_message(self)
+        link.message = self
         # wait for the transmission + propagation time to elapse
         yield hold, self, transmission_time_us + link.propagation_delay_us
         # transmission finished, notify the link's end point, but do not
@@ -435,10 +403,10 @@ class Message(Process):
         Returns true if self and message are identical except for the message
         ID.
         """
-        return (self.get_source() == message.get_source() and
-            self.get_destination() == message.get_destination() and
-            self.get_size_in_bytes() == message.get_size_in_bytes() and
-            self.get_message_type() == message.get_message_type())
+        return (self.source == message.source and
+            self.destination == message.destination and
+            self.size_bytes == message.size_bytes and
+            self.message_type == message.message_type)
 
     def is_trigger_message(self):
         return self.message_type == "TM"

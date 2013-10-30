@@ -45,7 +45,7 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=self.EC_duration_us)
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 1)
 
     def test_2EC_simulated__record_2_msg(self):
@@ -56,7 +56,7 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=2 * self.EC_duration_us)
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 2)
 
     def test_3EC_simulated__record_3_msg(self):
@@ -67,7 +67,7 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         simulate(until=3 * self.EC_duration_us)
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 3)
 
 

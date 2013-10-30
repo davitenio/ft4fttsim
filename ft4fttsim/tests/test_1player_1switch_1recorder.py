@@ -52,7 +52,7 @@ class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
         self.message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
         self.messages_to_transmit = [Message(self.player, self.recorder,
             self.message_size_bytes, "message with NO list as destination")]
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {self.tx_start_time: transmission_command}
         self.player.load_transmission_commands(list_of_commands)
@@ -68,7 +68,7 @@ class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
         #simlogging.logger.propagate = True
         # create a message instance whose destination field is NOT a list
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
@@ -86,7 +86,7 @@ class TestSingleMessageDestinationIsList(Test1Player1Switch1Recorder):
         self.message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
         self.messages_to_transmit = [Message(self.player, [self.recorder],
             self.message_size_bytes, "message with list as destination")]
-        outlink = self.player.get_outlinks()[0]
+        outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {self.tx_start_time: transmission_command}
         self.player.load_transmission_commands(list_of_commands)
@@ -102,7 +102,7 @@ class TestSingleMessageDestinationIsList(Test1Player1Switch1Recorder):
         #simlogging.logger.propagate = True
         # create a message instance whose destination field is a list
         simulate(until=float("inf"))
-        received_messages = self.recorder.get_recorded_messages()
+        received_messages = self.recorder.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
