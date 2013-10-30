@@ -6,20 +6,6 @@ from ft4fttsim.ethernet import Ethernet
 from ft4fttsim.networking import *
 
 
-class TestLinkIntegration(unittest.TestCase):
-
-    def setUp(self):
-        self.link = Link(10, 0)
-
-    def test_get_message__after_put_message__returns_same_message(self):
-        destination = NetworkDevice("destination")
-        destination.connect_inlink(self.link)
-        m = Message(sentinel.dummy_source, [destination],
-            Ethernet.MAX_FRAME_SIZE_BYTES, "test message")
-        self.link.put_message(m)
-        self.assertEqual(self.link.get_message(), m)
-
-
 class TestNetworkDeviceIntegration(unittest.TestCase):
 
     def setUp(self):
@@ -94,7 +80,7 @@ class TestNetworkDeviceIntegration(unittest.TestCase):
         self.device.connect_inlink(link)
         test_message = Message(sentinel.dummy_source, [self.device],
             Ethernet.MAX_FRAME_SIZE_BYTES, "test message")
-        link.put_message(test_message)
+        link.message = test_message
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message])
 
@@ -130,8 +116,8 @@ class TestNetworkDeviceWith2Inlinks(unittest.TestCase):
     def test_read_inlinks__put_message_on_2_inlinks__returns_messages(self):
         test_message = Message(sentinel.dummy_source, [self.device],
             Ethernet.MAX_FRAME_SIZE_BYTES, "test message")
-        self.inlink1.put_message(test_message)
-        self.inlink2.put_message(test_message)
+        self.inlink1.message = test_message
+        self.inlink2.message = test_message
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message, test_message])
 
@@ -140,8 +126,8 @@ class TestNetworkDeviceWith2Inlinks(unittest.TestCase):
             Ethernet.MAX_FRAME_SIZE_BYTES, "test message1")
         test_message2 = Message(sentinel.dummy_source, [self.device],
             Ethernet.MAX_FRAME_SIZE_BYTES, "test message2")
-        self.inlink1.put_message(test_message1)
-        self.inlink2.put_message(test_message2)
+        self.inlink1.message = test_message1
+        self.inlink2.message = test_message2
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [test_message1, test_message2])
 

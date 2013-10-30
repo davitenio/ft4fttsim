@@ -30,14 +30,10 @@ class TestLink(unittest.TestCase):
         self.assertEqual(self.link.end_point, None)
 
     def test_has_message__link_created__returns_false(self):
-        self.assertFalse(self.link.has_message())
-
-    def test_get_message__after_put_message__returns_same_message(self):
-        self.link.put_message(sentinel.dummy_message)
-        self.assertEqual(self.link.get_message(), sentinel.dummy_message)
+        self.assertEqual(self.link.message, None)
 
     def test_get_message__link_created__returns_none(self):
-        self.assertEqual(self.link.get_message(), None)
+        self.assertEqual(self.link.message, None)
 
 
 class TestNetworkDevice(unittest.TestCase):
@@ -120,20 +116,17 @@ class TestNetworkDevice(unittest.TestCase):
         self.assertEqual(self.device.inlinks, inlinks)
 
     def test_read_inlinks__put_message_on_1_inlink__returns_message(self):
-        link = Mock(spec_set=Link)
-        link.has_message.return_value = True
-        link.get_message.return_value = sentinel.dummy_message
+        link = Mock(spec_set=Link(5, 5))
+        link.message = sentinel.dummy_message
         self.device.connect_inlink(link)
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [sentinel.dummy_message])
 
     def test_read_inlinks__put_message_on_2_inlinks__returns_messages(self):
-        inlink1 = Mock(spec_set=Link)
-        inlink1.has_message.return_value = True
-        inlink1.get_message.return_value = sentinel.dummy_message1
-        inlink2 = Mock(spec_set=Link)
-        inlink2.has_message.return_value = True
-        inlink2.get_message.return_value = sentinel.dummy_message2
+        inlink1 = Mock(spec_set=Link(5, 5))
+        inlink1.message = sentinel.dummy_message1
+        inlink2 = Mock(spec_set=Link(5, 5))
+        inlink2.message = sentinel.dummy_message2
         self.device.connect_inlink(inlink1)
         self.device.connect_inlink(inlink2)
         received_messages = self.device.read_inlinks()
@@ -141,52 +134,11 @@ class TestNetworkDevice(unittest.TestCase):
             [sentinel.dummy_message1, sentinel.dummy_message2])
 
     def test_read_inlinks__1_empty_inlink__returns_empty_list(self):
-        inlink = Mock(spec_set=Link, name="inlink")
-        inlink.has_message.return_value = False
+        inlink = Mock()
+        inlink.message = None
         self.device.connect_inlink(inlink)
         received_messages = self.device.read_inlinks()
         self.assertEqual(received_messages, [])
-
-    def test_read_inlinks__2_empty_inlinks__returns_empty_list(self):
-        inlink1 = Mock(spec_set=Link, name="inlink1")
-        inlink1.has_message.return_value = False
-        inlink2 = Mock(spec_set=Link, name="inlink2")
-        inlink2.has_message.return_value = False
-        self.device.connect_inlink(inlink1)
-        self.device.connect_inlink(inlink2)
-        received_messages = self.device.read_inlinks()
-        self.assertEqual(received_messages, [])
-
-    def test_read_inlinks__1of2_inlinks_has_message__returns_message_1(self):
-        inlink1 = Mock(spec_set=Link, name="inlink1")
-        inlink1.has_message.return_value = True
-        inlink1.get_message.return_value = sentinel.dummy_message1
-        inlink2 = Mock(spec_set=Link, name="inlink2")
-        inlink2.has_message.return_value = False
-        self.device.connect_inlink(inlink1)
-        self.device.connect_inlink(inlink2)
-        received_messages = self.device.read_inlinks()
-        self.assertEqual(received_messages, [sentinel.dummy_message1])
-
-    def test_read_inlinks__1of2_inlinks_has_message__returns_message_2(self):
-        inlink1 = Mock(spec_set=Link, name="inlink1")
-        inlink1.has_message.return_value = False
-        inlink2 = Mock(spec_set=Link, name="inlink2")
-        inlink2.has_message.return_value = True
-        inlink2.get_message.return_value = sentinel.dummy_message2
-        self.device.connect_inlink(inlink1)
-        self.device.connect_inlink(inlink2)
-        received_messages = self.device.read_inlinks()
-        self.assertEqual(received_messages, [sentinel.dummy_message2])
-
-    def test_read_inlinks__5_inlinks_have_message__get_message_called(self):
-        inlinks = [Mock(spec_set=Link) for i in range(5)]
-        for link in inlinks:
-            link.has_message.return_value = True
-            self.device.connect_inlink(link)
-        self.device.read_inlinks()
-        for link in inlinks:
-            link.get_message.assert_called_once_with()
 
     def test_instruct_transmission__no_outlink__raise_exception(self):
         not_connected_outlink = sentinel.dummy_link

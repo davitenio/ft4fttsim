@@ -85,18 +85,6 @@ class Link(Resource):
             raise FT4FTTSimException("Link already has an end point.")
         self._end_point = device
 
-    def has_message(self):
-        return self.message != None
-
-    def put_message(self, message):
-        assert self.message == None
-        self.message = message
-
-    def get_message(self):
-        tmp = self.message
-        self.message = None
-        return tmp
-
     def __str__(self):
         return "{:s}->{:s}".format(self._start_point, self._end_point)
 
@@ -130,9 +118,9 @@ class NetworkDevice(Process):
     def read_inlinks(self):
         received_messages = []
         for inlink in self.inlinks:
-            if inlink.has_message():
-                message = inlink.get_message()
-                received_messages.append(message)
+            if inlink.message is not None:
+                received_messages.append(inlink.message)
+                inlink.message = None
         return received_messages
 
     def instruct_transmission(self, message, outlink):
@@ -396,7 +384,7 @@ class Message(Process):
         transmission_time_us = ((Ethernet.PREAMBLE_SIZE_BYTES +
             Ethernet.SFD_SIZE_BYTES + self.size_bytes) * BITS_PER_BYTE /
             float(link.megabits_per_second))
-        link.put_message(self)
+        link.message = self
         # wait for the transmission + propagation time to elapse
         yield hold, self, transmission_time_us + link.propagation_delay_us
         # transmission finished, notify the link's end point, but do not
