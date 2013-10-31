@@ -183,7 +183,7 @@ class MessageRecordingDevice(NetworkDevice):
 
     @property
     def recorded_timestamps(self):
-        return self.reception_records.keys()
+        return list(self.reception_records.keys())
 
 
 class MessagePlaybackDevice(NetworkDevice):
