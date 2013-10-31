@@ -17,23 +17,20 @@ class Test1Player1Switch1Recorder(unittest.TestCase):
         | player | ---> | switch | --> | recorder |
         +--------+      +--------+     +----------+
         """
-        self.player = MessagePlaybackDevice("player")
-        self.switch = Switch("switch")
-        self.recorder = MessageRecordingDevice("recorder")
+        self.env = simpy.Environment()
+        self.player = MessagePlaybackDevice(self.env, "player")
+        self.switch = Switch(self.env, "switch")
+        self.recorder = MessageRecordingDevice(self.env, "recorder")
         self.link_Mbps = 100
         self.link_propagation_delay_us = 3
-        link_player_switch = Link(self.link_Mbps,
+        link_player_switch = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.player.connect_outlink(link_player_switch)
         self.switch.connect_inlink(link_player_switch)
-        link_switch_recorder = Link(self.link_Mbps,
+        link_switch_recorder = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.switch.connect_outlink(link_switch_recorder)
         self.recorder.connect_inlink(link_switch_recorder)
-        # initialize SimPy
-        initialize()
-        for device in [self.player, self.switch, self.recorder]:
-            activate(device, device.run(), at=0.0)
 
     def tearDown(self):
         simlogging.logger.propagate = False
@@ -50,8 +47,9 @@ class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
         Test1Player1Switch1Recorder.setUp(self)
         self.tx_start_time = 0
         self.message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
-        self.messages_to_transmit = [Message(self.player, self.recorder,
-            self.message_size_bytes, "message with NO list as destination")]
+        self.messages_to_transmit = [Message(self.env, self.player,
+            self.recorder, self.message_size_bytes,
+            "message with NO list as destination")]
         outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {self.tx_start_time: transmission_command}
@@ -67,7 +65,7 @@ class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
         # create a message instance whose destination field is NOT a list
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
@@ -84,8 +82,9 @@ class TestSingleMessageDestinationIsList(Test1Player1Switch1Recorder):
         Test1Player1Switch1Recorder.setUp(self)
         self.tx_start_time = 0
         self.message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
-        self.messages_to_transmit = [Message(self.player, [self.recorder],
-            self.message_size_bytes, "message with list as destination")]
+        self.messages_to_transmit = [Message(self.env, self.player,
+            [self.recorder], self.message_size_bytes,
+            "message with list as destination")]
         outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {self.tx_start_time: transmission_command}
@@ -100,8 +99,7 @@ class TestSingleMessageDestinationIsList(Test1Player1Switch1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        # create a message instance whose destination field is a list
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))

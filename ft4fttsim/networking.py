@@ -1,13 +1,13 @@
 # author: David Gessner <davidges@gmail.com>
 
-from SimPy.Simulation import *
-from ethernet import Ethernet
-from exceptions import FT4FTTSimException
-from simlogging import log
+import simpy
+from ft4fttsim.ethernet import Ethernet
+from ft4fttsim.exceptions import FT4FTTSimException
+from ft4fttsim.simlogging import log
 import collections
 
 
-class Link(Resource):
+class Link:
     """
     Class whose instances model links used in an Ethernet network.
 
@@ -22,7 +22,7 @@ class Link(Resource):
     is ordered through the link, then they will be queued.
 
     """
-    def __init__(self, megabits_per_second, propagation_delay_us):
+    def __init__(self, env, megabits_per_second, propagation_delay_us):
         """
         Create a new instance of class Link.
 
@@ -40,14 +40,12 @@ class Link(Resource):
             raise FT4FTTSimException("Mbps must be a positive number.")
         if propagation_delay_us < 0:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
-        Resource.__init__(self, 1)
+        self.env = env
+        self.resource = simpy.Resource(self.env, capacity=1)
         self._start_point = None
         self._end_point = None
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
-        self.message_is_transmitted = SimEvent()
-        # message that is being transmitted in the link
-        self.message = None
 
     @property
     def start_point(self):
@@ -89,14 +87,15 @@ class Link(Resource):
         return "{}->{}".format(self._start_point, self._end_point)
 
 
-class NetworkDevice(Process):
+class NetworkDevice:
 
-    def __init__(self, name):
-        Process.__init__(self)
+    def __init__(self, env, name):
+        self.env = env
         # list of outlinks to which the network device is connected
         self.outlinks = []
         # list of inlinks to which the network device is connected
         self.inlinks = []
+        self.receive_buffer = simpy.Store(self.env)
         self.name = name
 
     def connect_outlink(self, link):
@@ -115,23 +114,19 @@ class NetworkDevice(Process):
         for link in link_list:
             self.connect_inlink(link)
 
-    def read_inlinks(self):
-        received_messages = []
-        for inlink in self.inlinks:
-            if inlink.message is not None:
-                received_messages.append(inlink.message)
-                inlink.message = None
-        return received_messages
-
     def instruct_transmission(self, message, outlink):
         log.debug("{} instructing transmission of {} on {}".format(self,
             message, outlink))
         if outlink not in self.outlinks:
             raise FT4FTTSimException("{} is not an outlink of {}".format(
                 outlink, self))
-        activate(message, message.transmit(outlink))
+        transmission = message.transmit(outlink)
+        self.env.process(transmission)
 
     def __str__(self):
+        return self.name
+
+    def __repr__(self):
         return self.name
 
 
@@ -148,8 +143,9 @@ class MessageRecordingDevice(NetworkDevice):
 
     """
 
-    def __init__(self, name):
-        NetworkDevice.__init__(self, name)
+    def __init__(self, env, name):
+        NetworkDevice.__init__(self, env, name)
+        self.proc = env.process(self.run())
         self.reception_records = {}
 
     def connect_outlink(self, link):
@@ -164,13 +160,12 @@ class MessageRecordingDevice(NetworkDevice):
     def run(self):
         while True:
             log.debug("{} sleeping until next reception".format(self))
-            # sleep until a message notifies that it has finished transmission
-            yield waitevent, self, [link.message_is_transmitted for link in
-                self.inlinks]
-            received_messages = self.read_inlinks()
+            # sleep until a message is in the receive buffer
+            msg = yield self.receive_buffer.get()
+            received_messages = [msg]
             log.debug("{} received {}".format(self,
                 received_messages))
-            timestamp = now()
+            timestamp = self.env.now
             self.reception_records[timestamp] = received_messages
             log.debug("{} recorded {}".format(self, self.reception_records))
 
@@ -199,14 +194,15 @@ class MessagePlaybackDevice(NetworkDevice):
 
     """
 
-    def __init__(self, name):
-        NetworkDevice.__init__(self, name)
+    def __init__(self, env, name):
+        NetworkDevice.__init__(self, env, name)
+        self.proc = env.process(self.run())
         self.transmission_commands = {}
 
     def load_transmission_commands(self, transmission_commands):
         """
         Load the transmission commands to execute once the run method is
-        activated by SimPy.
+        activated by simpy.
 
         Arguments:
             transmission_commands: The transmission commands to execute once
@@ -235,15 +231,12 @@ class MessagePlaybackDevice(NetworkDevice):
     def connect_inlink_list(self, link):
         raise NotImplementedError()
 
-    def read_inlinks(self):
-        raise NotImplementedError()
-
     def run(self):
         for time in sorted(self.transmission_commands):
-            delay_before_next_tx_order = time - now()
+            delay_before_next_tx_order = time - self.env.now
             log.debug("{} sleeping until next transmission".format(self))
             # sleep until next transmission time
-            yield hold, self, delay_before_next_tx_order
+            yield self.env.timeout(delay_before_next_tx_order)
             for outlink, messages_to_tx in \
                     self.transmission_commands[time].items():
                 for message in messages_to_tx:
@@ -255,6 +248,10 @@ class Switch(NetworkDevice):
     Class whose instances model Ethernet switches.
 
     """
+
+    def __init__(self, env, name):
+        NetworkDevice.__init__(self, env, name)
+        self.proc = env.process(self.run())
 
     def forward_messages(self, message_list):
         """
@@ -302,14 +299,13 @@ class Switch(NetworkDevice):
 
     def run(self):
         while True:
-            # sleep until a message notifies that it has finished transmission
-            yield waitevent, self, [link.message_is_transmitted for link in
-                self.inlinks]
-            received_messages = self.read_inlinks()
+            # sleep until a message is in the receive buffer
+            msg = yield self.receive_buffer.get()
+            received_messages = [msg]
             self.forward_messages(received_messages)
 
 
-class Message(Process):
+class Message:
     """
     Class for messages that model Ethernet frames.
 
@@ -317,7 +313,7 @@ class Message(Process):
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self, source, destination, size_bytes, message_type):
+    def __init__(self, env, source, destination, size_bytes, message_type):
         """
         Create an instance of Message.
 
@@ -342,7 +338,7 @@ class Message(Process):
                 "Message size must be between {} and {}, but is {}".format(
                 Ethernet.MIN_FRAME_SIZE_BYTES, Ethernet.MAX_FRAME_SIZE_BYTES,
                 size_bytes))
-        Process.__init__(self)
+        self.env = env
         self.ID = Message.next_ID
         Message.next_ID += 1
         # source of the message. Models the source MAC address.
@@ -363,7 +359,9 @@ class Message(Process):
         Creates a new message instance using template_message as a template.
 
         """
-        new_equivalent_message = cls(template_message.source,
+        new_equivalent_message = cls(
+            template_message.env,
+            template_message.source,
             template_message.destination,
             template_message.size_bytes,
             template_message.message_type)
@@ -374,29 +372,29 @@ class Message(Process):
         Transmit the message instance on the Link link.
         """
         log.debug("{} queued for transmission".format(self))
-        # request access to, and possibly queue for, the link
-        yield request, self, link
-        log.debug("{} transmission started".format(self))
-        BITS_PER_BYTE = 8
-        # time in microseconds to load the message into the link (this does
-        # not include the propagation time)
-        transmission_time_us = ((Ethernet.PREAMBLE_SIZE_BYTES +
-            Ethernet.SFD_SIZE_BYTES + self.size_bytes) * BITS_PER_BYTE /
-            float(link.megabits_per_second))
-        link.message = self
-        # wait for the transmission + propagation time to elapse
-        yield hold, self, transmission_time_us + link.propagation_delay_us
-        # transmission finished, notify the link's end point, but do not
-        # release the link yet
-        log.debug("{} transmission finished".format(self))
-        link.message_is_transmitted.signal()
-        # wait for the duration of the ethernet interframe gap to elapse
-        IFG_duration_us = (Ethernet.IFG_SIZE_BYTES * BITS_PER_BYTE /
-            float(link.megabits_per_second))
-        yield hold, self, IFG_duration_us
-        log.debug("{} inter frame gap finished".format(self))
-        # release the link, allowing another message to gain access to it
-        yield release, self, link
+        with link.resource.request() as transmission_request:
+            # request access to, and possibly queue for, the link
+            yield transmission_request
+            log.debug("{} transmission started".format(self))
+            BITS_PER_BYTE = 8
+            # time in microseconds to load the message into the link (this does
+            # not include the propagation time)
+            transmission_time_us = ((Ethernet.PREAMBLE_SIZE_BYTES +
+                Ethernet.SFD_SIZE_BYTES + self.size_bytes) * BITS_PER_BYTE /
+                float(link.megabits_per_second))
+            link.message = self
+            # wait for the transmission + propagation time to elapse
+            yield self.env.timeout(transmission_time_us +
+                link.propagation_delay_us)
+            # transmission finished, notify the link's end point, but do not
+            # release the link yet
+            log.debug("{} transmission finished".format(self))
+            link.end_point.receive_buffer.put(self)
+            # wait for the duration of the ethernet interframe gap to elapse
+            IFG_duration_us = (Ethernet.IFG_SIZE_BYTES * BITS_PER_BYTE /
+                float(link.megabits_per_second))
+            yield self.env.timeout(IFG_duration_us)
+            log.debug("{} inter frame gap finished".format(self))
 
     def is_equivalent(self, message):
         """
@@ -412,4 +410,7 @@ class Message(Process):
         return self.message_type == "TM"
 
     def __str__(self):
+        return self.name
+
+    def __repr__(self):
         return self.name

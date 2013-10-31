@@ -17,22 +17,20 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         | master | ---> | switch | ---> | recorder |
         +--------+      +--------+      +----------+
         """
-        self.switch = Switch("test switch")
-        self.recorder = MessageRecordingDevice("recorder")
+        self.env = simpy.Environment()
+        self.switch = Switch(self.env, "test switch")
+        self.recorder = MessageRecordingDevice(self.env, "recorder")
         # configured elementary cycle duration in microseconds
         self.EC_duration_us = 10 ** 9
-        self.master = Master("test master", [self.recorder],
+        self.master = Master(self.env, "test master", [self.recorder],
             self.EC_duration_us)
-        link_master_switch = Link(100, 0)
-        link_switch_recorder = Link(100, 0)
+        link_master_switch = Link(self.env, 100, 0)
+        link_switch_recorder = Link(self.env, 100, 0)
         self.master.connect_outlink(link_master_switch)
         self.switch.connect_inlink(link_master_switch)
         self.switch.connect_outlink(link_switch_recorder)
         self.recorder.connect_inlink(link_switch_recorder)
-        # initialize SimPy
-        initialize()
-        for device in [self.master, self.switch, self.recorder]:
-            activate(device, device.run(), at=0.0)
+        simlogging.env = self.env
 
     def tearDown(self):
         simlogging.logger.propagate = False
@@ -44,7 +42,7 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=self.EC_duration_us)
+        self.env.run(until=self.EC_duration_us)
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 1)
 
@@ -55,7 +53,7 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=2 * self.EC_duration_us)
+        self.env.run(until=2 * self.EC_duration_us)
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 2)
 
@@ -66,7 +64,7 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=3 * self.EC_duration_us)
+        self.env.run(until=3 * self.EC_duration_us)
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 3)
 

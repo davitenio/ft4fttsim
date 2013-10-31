@@ -26,34 +26,30 @@ class Test1Player1Switch3Recorders(unittest.TestCase):
                        | recorder3 |
                        +-----------+
         """
-        self.player = MessagePlaybackDevice("player")
-        self.switch = Switch("switch")
-        self.recorder1 = MessageRecordingDevice("recorder1")
-        self.recorder2 = MessageRecordingDevice("recorder2")
-        self.recorder3 = MessageRecordingDevice("recorder3")
+        self.env = simpy.Environment()
+        self.player = MessagePlaybackDevice(self.env, "player")
+        self.switch = Switch(self.env, "switch")
+        self.recorder1 = MessageRecordingDevice(self.env, "recorder1")
+        self.recorder2 = MessageRecordingDevice(self.env, "recorder2")
+        self.recorder3 = MessageRecordingDevice(self.env, "recorder3")
         self.link_Mbps = 100
         self.link_propagation_delay_us = 3
-        link_player_switch = Link(self.link_Mbps,
+        link_player_switch = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.player.connect_outlink(link_player_switch)
         self.switch.connect_inlink(link_player_switch)
-        link_switch_recorder1 = Link(self.link_Mbps,
+        link_switch_recorder1 = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.switch.connect_outlink(link_switch_recorder1)
         self.recorder1.connect_inlink(link_switch_recorder1)
-        link_switch_recorder2 = Link(self.link_Mbps,
+        link_switch_recorder2 = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.switch.connect_outlink(link_switch_recorder2)
         self.recorder2.connect_inlink(link_switch_recorder2)
-        link_switch_recorder3 = Link(self.link_Mbps,
+        link_switch_recorder3 = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.switch.connect_outlink(link_switch_recorder3)
         self.recorder3.connect_inlink(link_switch_recorder3)
-        # initialize SimPy
-        initialize()
-        for device in [self.player, self.switch, self.recorder1,
-        self.recorder2, self.recorder3]:
-            activate(device, device.run(), at=0.0)
 
     def tearDown(self):
         simlogging.logger.propagate = False
@@ -69,7 +65,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         Test1Player1Switch3Recorders.setUp(self)
         tx_start_time = 0
         message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
-        self.messages_to_transmit = [Message(self.player,
+        self.messages_to_transmit = [Message(self.env, self.player,
             [self.recorder1, self.recorder3],
             message_size_bytes, "message for recorder 1 and 3")]
         outlink = self.player.outlinks[0]
@@ -83,7 +79,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
@@ -94,7 +90,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder3.recorded_messages
         self.assertTrue(
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
@@ -105,7 +101,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
         self.assertNotIn(self.messages_to_transmit[0], received_messages)
 

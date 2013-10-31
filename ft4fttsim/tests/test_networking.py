@@ -9,37 +9,33 @@ from ft4fttsim.exceptions import FT4FTTSimException
 class TestLinkConstructor(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.env = simpy.Environment()
 
     def test_propagation_delay_is_negative__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Link, 10, -1)
+        self.assertRaises(FT4FTTSimException, Link, self.env, 10, -1)
 
     def test_megabits_per_second_is_zero__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Link, 0, 1)
+        self.assertRaises(FT4FTTSimException, Link, self.env, 0, 1)
 
     def test_megabits_per_second_is_negative__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Link, -1, 1)
+        self.assertRaises(FT4FTTSimException, Link, self.env, -1, 1)
 
 
 class TestLink(unittest.TestCase):
 
     def setUp(self):
-        self.link = Link(10, 0)
+        self.env = simpy.Environment()
+        self.link = Link(self.env, 10, 0)
 
     def test_get_end_point__link_created__end_point_is_None(self):
         self.assertEqual(self.link.end_point, None)
-
-    def test_has_message__link_created__returns_false(self):
-        self.assertEqual(self.link.message, None)
-
-    def test_get_message__link_created__returns_none(self):
-        self.assertEqual(self.link.message, None)
 
 
 class TestNetworkDevice(unittest.TestCase):
 
     def setUp(self):
-        self.device = NetworkDevice("test device")
+        self.env = simpy.Environment()
+        self.device = NetworkDevice(self.env, "test device")
 
     def test_get_outlinks__new_device__returns_empty_list(self):
         self.assertEqual(self.device.outlinks, [])
@@ -115,31 +111,6 @@ class TestNetworkDevice(unittest.TestCase):
         self.device.connect_inlink_list(inlinks)
         self.assertEqual(self.device.inlinks, inlinks)
 
-    def test_read_inlinks__put_message_on_1_inlink__returns_message(self):
-        link = Mock(spec_set=Link(5, 5))
-        link.message = sentinel.dummy_message
-        self.device.connect_inlink(link)
-        received_messages = self.device.read_inlinks()
-        self.assertEqual(received_messages, [sentinel.dummy_message])
-
-    def test_read_inlinks__put_message_on_2_inlinks__returns_messages(self):
-        inlink1 = Mock(spec_set=Link(5, 5))
-        inlink1.message = sentinel.dummy_message1
-        inlink2 = Mock(spec_set=Link(5, 5))
-        inlink2.message = sentinel.dummy_message2
-        self.device.connect_inlink(inlink1)
-        self.device.connect_inlink(inlink2)
-        received_messages = self.device.read_inlinks()
-        self.assertEqual(received_messages,
-            [sentinel.dummy_message1, sentinel.dummy_message2])
-
-    def test_read_inlinks__1_empty_inlink__returns_empty_list(self):
-        inlink = Mock()
-        inlink.message = None
-        self.device.connect_inlink(inlink)
-        received_messages = self.device.read_inlinks()
-        self.assertEqual(received_messages, [])
-
     def test_instruct_transmission__no_outlink__raise_exception(self):
         not_connected_outlink = sentinel.dummy_link
         self.assertRaises(FT4FTTSimException,
@@ -150,39 +121,42 @@ class TestNetworkDevice(unittest.TestCase):
 class TestMessageConstructor(unittest.TestCase):
 
     def setUp(self):
+        self.env = simpy.Environment()
         self.minimum_ethernet_frame_size = 64
         self.maximum_ethernet_frame_size = 1518
 
     def test_negative_size__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Message, sentinel.dummy_source,
-            sentinel.dummy_destination, -1, sentinel.dummy_type)
+        self.assertRaises(FT4FTTSimException, Message, self.env,
+            sentinel.dummy_source, sentinel.dummy_destination, -1,
+            sentinel.dummy_type)
 
     def test_less_than_minimum_size__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Message, sentinel.dummy_source,
-            sentinel.dummy_destination, self.minimum_ethernet_frame_size - 1,
-            sentinel.dummy_type)
+        self.assertRaises(FT4FTTSimException, Message, self.env,
+            sentinel.dummy_source, sentinel.dummy_destination,
+            self.minimum_ethernet_frame_size - 1, sentinel.dummy_type)
 
     def test_equal_minimum_size__does_not_raise_exception(self):
         # check that FT4FTTSimException is not thrown
-        Message(sentinel.dummy_source, sentinel.dummy_destination,
+        Message(self.env, sentinel.dummy_source, sentinel.dummy_destination,
             self.minimum_ethernet_frame_size, sentinel.dummy_type)
 
     def test_greater_than_maximum_size__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Message, sentinel.dummy_source,
-            sentinel.dummy_destination, self.maximum_ethernet_frame_size + 1,
-            sentinel.dummy_type)
+        self.assertRaises(FT4FTTSimException, Message, self.env,
+            sentinel.dummy_source, sentinel.dummy_destination,
+            self.maximum_ethernet_frame_size + 1, sentinel.dummy_type)
 
     def test_equal_maximum_size__does_not_raise_exception(self):
         # check that FT4FTTSimException is not thrown
-        Message(sentinel.dummy_source, sentinel.dummy_destination,
+        Message(self.env, sentinel.dummy_source, sentinel.dummy_destination,
             self.maximum_ethernet_frame_size, sentinel.dummy_type)
 
 
 class TestMessage(unittest.TestCase):
 
     def setUp(self):
-        self.message = Message(sentinel.source, sentinel.destinations,
-            Ethernet.MAX_FRAME_SIZE_BYTES,
+        self.env = simpy.Environment()
+        self.message = Message(self.env, sentinel.source,
+            sentinel.destinations, Ethernet.MAX_FRAME_SIZE_BYTES,
             sentinel.message_type)
 
     def test_destination__message_created__returns_expected_dst(self):
@@ -199,7 +173,8 @@ class TestMessage(unittest.TestCase):
 class TestSwitch(unittest.TestCase):
 
     def setUp(self):
-        self.switch = Switch("switch under test")
+        self.env = simpy.Environment()
+        self.switch = Switch(self.env, "switch under test")
 
     def test_forward_messages__no_outlinks__no_instruct_transmission(self):
         """
@@ -207,8 +182,8 @@ class TestSwitch(unittest.TestCase):
         instruct_transmission should not be called.
         """
         self.switch.instruct_transmission = Mock()
-        message_list = [Message(sentinel.source, sentinel.destinations,
-            Ethernet.MAX_FRAME_SIZE_BYTES,
+        message_list = [Message(self.env, sentinel.source,
+            sentinel.destinations, Ethernet.MAX_FRAME_SIZE_BYTES,
             sentinel.message_type) for i in range(10)]
         self.switch.forward_messages(message_list)
         self.assertFalse(self.switch.instruct_transmission.called)

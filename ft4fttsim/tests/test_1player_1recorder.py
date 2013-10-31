@@ -17,18 +17,15 @@ class Test1Player1Recorder(unittest.TestCase):
         | player | ---> | recorder |
         +--------+      +----------+
         """
-        self.player = MessagePlaybackDevice("player")
-        self.recorder = MessageRecordingDevice("recorder")
+        self.env = simpy.Environment()
+        self.player = MessagePlaybackDevice(self.env, "player")
+        self.recorder = MessageRecordingDevice(self.env, "recorder")
         self.link_Mbps = 100
         self.link_propagation_delay_us = 3
-        link_player_recorder = Link(self.link_Mbps,
+        link_player_recorder = Link(self.env, self.link_Mbps,
             self.link_propagation_delay_us)
         self.player.connect_outlink(link_player_recorder)
         self.recorder.connect_inlink(link_player_recorder)
-        # initialize SimPy
-        initialize()
-        for device in [self.player, self.recorder]:
-            activate(device, device.run(), at=0.0)
 
     def tearDown(self):
         simlogging.logger.propagate = False
@@ -43,8 +40,8 @@ class TestSingleMessage(Test1Player1Recorder):
         Test1Player1Recorder.setUp(self)
         self.tx_start_time = 0
         self.message_size_bytes = 1518
-        self.messages_to_transmit = [Message(self.player, self.recorder,
-            self.message_size_bytes, "test message")]
+        self.messages_to_transmit = [Message(self.env, self.player,
+            self.recorder, self.message_size_bytes, "test message")]
         outlink = self.player.outlinks[0]
         transmission_command = {outlink: self.messages_to_transmit}
         list_of_commands = {self.tx_start_time: transmission_command}
@@ -56,7 +53,7 @@ class TestSingleMessage(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(self.messages_to_transmit, received_messages)
 
@@ -67,7 +64,7 @@ class TestSingleMessage(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         timestamp = self.recorder.recorded_timestamps[0]
         BITS_PER_BYTE = 8
         # time it should take the message to arrive at recorder in microseconds
@@ -87,11 +84,11 @@ class TestTwoMessages(Test1Player1Recorder):
         """
         Test1Player1Recorder.setUp(self)
         tx_start_time0, tx_start_time1 = range(2)
-        self.messages_to_transmit0 = [Message(self.player, self.recorder,
-            Ethernet.MAX_FRAME_SIZE_BYTES,
+        self.messages_to_transmit0 = [Message(self.env, self.player,
+            self.recorder, Ethernet.MAX_FRAME_SIZE_BYTES,
             "message at time {:d}".format(tx_start_time0))]
-        self.messages_to_transmit1 = [Message(self.player, self.recorder,
-            Ethernet.MAX_FRAME_SIZE_BYTES,
+        self.messages_to_transmit1 = [Message(self.env, self.player,
+            self.recorder, Ethernet.MAX_FRAME_SIZE_BYTES,
             "message at time {:d}".format(tx_start_time1))]
         outlink = self.player.outlinks[0]
         list_of_commands = {}
@@ -107,7 +104,7 @@ class TestTwoMessages(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 2)
 
@@ -117,7 +114,7 @@ class TestTwoMessages(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
             self.messages_to_transmit1)
@@ -137,8 +134,8 @@ class TestEightMessages(Test1Player1Recorder):
         list_of_commands = {}
         for time in transmission_start_times:
             transmission_command = {}
-            messages_to_transmit = [Message(self.player, self.recorder,
-                Ethernet.MAX_FRAME_SIZE_BYTES, "test")]
+            messages_to_transmit = [Message(self.env, self.player,
+                self.recorder, Ethernet.MAX_FRAME_SIZE_BYTES, "test")]
             self.all_messages_to_transmit.extend(messages_to_transmit)
             transmission_command[outlink] = messages_to_transmit
             list_of_commands[time] = transmission_command
@@ -151,7 +148,7 @@ class TestEightMessages(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(set(self.all_messages_to_transmit),
             set(received_messages))
@@ -163,7 +160,7 @@ class TestEightMessages(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(self.all_messages_to_transmit, received_messages)
 
@@ -178,21 +175,21 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         Test1Player1Recorder.setUp(self)
         tx_start_time0, tx_start_time1, tx_start_time2 = 0, 1, 2
         self.messages_to_transmit0 = [
-            Message(self.player, self.recorder,
+            Message(self.env, self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 0 msg 0"),
-            Message(self.player, self.recorder,
+            Message(self.env, self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 0 msg 1"),
             ]
         self.messages_to_transmit1 = [
-            Message(self.player, self.recorder,
+            Message(self.env, self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 1 msg 0"),
-            Message(self.player, self.recorder,
+            Message(self.env, self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 1 msg 1"),
             ]
         self.messages_to_transmit2 = [
-            Message(self.player, self.recorder,
+            Message(self.env, self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 2 msg 0"),
-            Message(self.player, self.recorder,
+            Message(self.env, self.player, self.recorder,
             Ethernet.MAX_FRAME_SIZE_BYTES, "batch 2 msg 1"),
             ]
         outlink = self.player.outlinks[0]
@@ -211,7 +208,7 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 6)
 
@@ -222,7 +219,7 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         """
         # uncomment the next line to enable logging during this test
         #simlogging.logger.propagate = True
-        simulate(until=float("inf"))
+        self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
             self.messages_to_transmit1 + self.messages_to_transmit2)

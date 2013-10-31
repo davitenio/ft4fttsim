@@ -1,8 +1,8 @@
 # author: David Gessner <davidges@gmail.com>
 
-from networking import NetworkDevice, Message
-from ethernet import Ethernet
-from SimPy.Simulation import passivate, now, activate, hold, waitevent
+from ft4fttsim.networking import NetworkDevice, Message
+from ft4fttsim.ethernet import Ethernet
+import simpy
 
 
 class Master(NetworkDevice):
@@ -11,6 +11,7 @@ class Master(NetworkDevice):
     """
 
     def __init__(self,
+            env,
             name,
             # slaves for which the master is responsible
             slaves,
@@ -19,7 +20,8 @@ class Master(NetworkDevice):
             # number of trigger messages to transmit per elementary cycle
             num_TMs_per_EC=1):
         assert isinstance(num_TMs_per_EC, int)
-        NetworkDevice.__init__(self, name)
+        NetworkDevice.__init__(self, env, name)
+        self.proc = env.process(self.run())
         self.slaves = slaves
         self.EC_duration_us = elementary_cycle_us
         self.num_TMs_per_EC = num_TMs_per_EC
@@ -28,23 +30,23 @@ class Master(NetworkDevice):
 
     def broadcast_trigger_message(self):
         for outlink in self.outlinks:
-            trigger_message = Message(self, self.slaves,
+            trigger_message = Message(self.env, self, self.slaves,
                 Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
             self.instruct_transmission(trigger_message, outlink)
 
     def run(self):
         while True:
             self.EC_count += 1
-            time_last_EC_start = now()
+            time_last_EC_start = self.env.now
             for message_count in range(self.num_TMs_per_EC):
                 self.broadcast_trigger_message()
             # wait for the next elementary cycle to start
             while True:
-                time_since_EC_start = now() - time_last_EC_start
+                time_since_EC_start = self.env.now - time_last_EC_start
                 delay_before_next_tx_order = float(self.EC_duration_us -
                     time_since_EC_start)
                 if delay_before_next_tx_order > 0:
-                    yield hold, self, delay_before_next_tx_order
+                    yield self.env.timeout(delay_before_next_tx_order)
                 else:
                     break
 
@@ -63,7 +65,7 @@ class Slave(NetworkDevice):
         for message_count in range(number):
             # TODO: decide who each message should be transmitted to. For now
             # we simply send it to ourselves.
-            new_message = Message(self, [self],
+            new_message = Message(self.env, self, [self],
                 Ethernet.MAX_FRAME_SIZE_BYTES, "sync")
             # order the transmission of the message on the specified links
             for outlink in links:
@@ -84,4 +86,4 @@ class Slave(NetworkDevice):
                 self.transmit_synchronous_messages(2, self.outlinks)
                 # wait before we order the next transmission
                 delay_before_next_tx_order = 0.0
-                yield hold, self, delay_before_next_tx_order
+                yield self.env.timeout(delay_before_next_tx_order)

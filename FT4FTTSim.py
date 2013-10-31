@@ -3,7 +3,7 @@
 from ft4fttsim.networking import Link, Switch
 from ft4fttsim.masterslave import Slave, Master
 from ft4fttsim.ethernet import Ethernet
-from SimPy.Simulation import initialize, activate, simulate, now
+import simpy
 import logging
 
 
@@ -95,7 +95,7 @@ def main():
         'FTT_EC_duration_us': Ethernet.MAX_FRAME_SIZE_BYTES * 20
     }
 
-    # initialize SimPy
+    # initialize simpy
     initialize()
     logging.info("Simulation initialized")
     network = create_network(config['num_slaves'], config['num_masters'],
