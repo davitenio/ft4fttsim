@@ -6,7 +6,7 @@ import logging
 
 class SimLoggerAdapter(logging.LoggerAdapter):
     def process(self, log_msg, kwargs):
-        return "{:>8.2f}: {:s}".format(now(), log_msg), kwargs
+        return "{:>8.2f}: {}".format(now(), log_msg), kwargs
 
 logging.basicConfig(level=logging.DEBUG,
     format="%(levelname)5s:%(filename)s:%(lineno)4d: %(message)s")

@@ -86,7 +86,7 @@ class Link(Resource):
         self._end_point = device
 
     def __str__(self):
-        return "{:s}->{:s}".format(self._start_point, self._end_point)
+        return "{}->{}".format(self._start_point, self._end_point)
 
 
 class NetworkDevice(Process):
@@ -124,7 +124,7 @@ class NetworkDevice(Process):
         return received_messages
 
     def instruct_transmission(self, message, outlink):
-        log.debug("{:s} instructing transmission of {} on {}".format(self,
+        log.debug("{} instructing transmission of {} on {}".format(self,
             message, outlink))
         if outlink not in self.outlinks:
             raise FT4FTTSimException("{} is not an outlink of {}".format(
@@ -163,16 +163,16 @@ class MessageRecordingDevice(NetworkDevice):
 
     def run(self):
         while True:
-            log.debug("{:s} sleeping until next reception".format(self))
+            log.debug("{} sleeping until next reception".format(self))
             # sleep until a message notifies that it has finished transmission
             yield waitevent, self, [link.message_is_transmitted for link in
                 self.inlinks]
             received_messages = self.read_inlinks()
-            log.debug("{:s} received {}".format(self,
+            log.debug("{} received {}".format(self,
                 received_messages))
             timestamp = now()
             self.reception_records[timestamp] = received_messages
-            log.debug("{:s} recorded {}".format(self, self.reception_records))
+            log.debug("{} recorded {}".format(self, self.reception_records))
 
     @property
     def recorded_messages(self):
@@ -226,7 +226,7 @@ class MessagePlaybackDevice(NetworkDevice):
 
         """
         self.transmission_commands = transmission_commands
-        log.debug("{:s} loaded transmissions: {}".format(self,
+        log.debug("{} loaded transmissions: {}".format(self,
             self.transmission_commands))
 
     def connect_inlink(self, link):
@@ -241,7 +241,7 @@ class MessagePlaybackDevice(NetworkDevice):
     def run(self):
         for time in sorted(self.transmission_commands):
             delay_before_next_tx_order = time - now()
-            log.debug("{:s} sleeping until next transmission".format(self))
+            log.debug("{} sleeping until next transmission".format(self))
             # sleep until next transmission time
             yield hold, self, delay_before_next_tx_order
             for outlink, messages_to_tx in \
@@ -352,10 +352,10 @@ class Message(Process):
         self.destination = destination
         self.size_bytes = size_bytes
         self.message_type = message_type
-        self.name = "({:03d}, {:s}, {:s}, {:d}, {:s})".format(self.ID,
+        self.name = "({:03d}, {}, {}, {:d}, {})".format(self.ID,
             self.source, self.destination, self.size_bytes,
             self.message_type)
-        log.debug("{:s} created".format(self))
+        log.debug("{} created".format(self))
 
     @classmethod
     def from_message(cls, template_message):
@@ -373,10 +373,10 @@ class Message(Process):
         """
         Transmit the message instance on the Link link.
         """
-        log.debug("{:s} queued for transmission".format(self))
+        log.debug("{} queued for transmission".format(self))
         # request access to, and possibly queue for, the link
         yield request, self, link
-        log.debug("{:s} transmission started".format(self))
+        log.debug("{} transmission started".format(self))
         BITS_PER_BYTE = 8
         # time in microseconds to load the message into the link (this does
         # not include the propagation time)
@@ -388,13 +388,13 @@ class Message(Process):
         yield hold, self, transmission_time_us + link.propagation_delay_us
         # transmission finished, notify the link's end point, but do not
         # release the link yet
-        log.debug("{:s} transmission finished".format(self))
+        log.debug("{} transmission finished".format(self))
         link.message_is_transmitted.signal()
         # wait for the duration of the ethernet interframe gap to elapse
         IFG_duration_us = (Ethernet.IFG_SIZE_BYTES * BITS_PER_BYTE /
             float(link.megabits_per_second))
         yield hold, self, IFG_duration_us
-        log.debug("{:s} inter frame gap finished".format(self))
+        log.debug("{} inter frame gap finished".format(self))
         # release the link, allowing another message to gain access to it
         yield release, self, link
 
