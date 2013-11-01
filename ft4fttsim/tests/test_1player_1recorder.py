@@ -4,7 +4,6 @@ import unittest
 from ft4fttsim.networking import *
 from ft4fttsim.masterslave import *
 from ft4fttsim.ethernet import *
-from ft4fttsim import simlogging
 
 
 class Test1Player1Recorder(unittest.TestCase):
@@ -27,9 +26,6 @@ class Test1Player1Recorder(unittest.TestCase):
         self.player.connect_outlink(link_player_recorder)
         self.recorder.connect_inlink(link_player_recorder)
 
-    def tearDown(self):
-        simlogging.logger.propagate = False
-
 
 class TestSingleMessage(Test1Player1Recorder):
 
@@ -51,8 +47,6 @@ class TestSingleMessage(Test1Player1Recorder):
         """
         Test that the recorder receives the message transmitted by player.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(self.messages_to_transmit, received_messages)
@@ -62,8 +56,6 @@ class TestSingleMessage(Test1Player1Recorder):
         Test that the message transmitted by the player arrives at the recorder
         when expected.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         timestamp = self.recorder.recorded_timestamps[0]
         BITS_PER_BYTE = 8
@@ -102,8 +94,6 @@ class TestTwoMessages(Test1Player1Recorder):
         """
         That that the recorder receives exactly 2 messages.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 2)
@@ -112,8 +102,6 @@ class TestTwoMessages(Test1Player1Recorder):
         """
         Test that the recorder receives the messages transmitted by the player.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
@@ -146,8 +134,6 @@ class TestEightMessages(Test1Player1Recorder):
         Test that the set of messages received by recorder equals the set of
         messages transmitted by player.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(set(self.all_messages_to_transmit),
@@ -158,8 +144,6 @@ class TestEightMessages(Test1Player1Recorder):
         Test that the recorder receives the same messages as the player
         transmitted, checking also that the order of messages coincides.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(self.all_messages_to_transmit, received_messages)
@@ -206,8 +190,6 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         """
         Test that the recorder received exactly 6 messages.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 6)
@@ -217,8 +199,6 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         Test that the recorder receives the messages transmitted by player, and
         that it receives them in the correct order.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +

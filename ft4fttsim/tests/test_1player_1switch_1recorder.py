@@ -4,7 +4,6 @@ import unittest
 from ft4fttsim.networking import *
 from ft4fttsim.masterslave import *
 from ft4fttsim.ethernet import *
-from ft4fttsim import simlogging
 
 
 class Test1Player1Switch1Recorder(unittest.TestCase):
@@ -31,9 +30,6 @@ class Test1Player1Switch1Recorder(unittest.TestCase):
             self.link_propagation_delay_us)
         self.switch.connect_outlink(link_switch_recorder)
         self.recorder.connect_inlink(link_switch_recorder)
-
-    def tearDown(self):
-        simlogging.logger.propagate = False
 
 
 class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
@@ -62,8 +58,6 @@ class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
         because the switch creates a new message instance when forwarding the
         message from one link to the other.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         # create a message instance whose destination field is NOT a list
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
@@ -97,8 +91,6 @@ class TestSingleMessageDestinationIsList(Test1Player1Switch1Recorder):
         because the switch creates a new message instance when forwarding the
         message from one link to the other.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
         self.assertTrue(

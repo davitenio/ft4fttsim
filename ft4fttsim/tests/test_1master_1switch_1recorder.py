@@ -4,7 +4,6 @@ import unittest
 from ft4fttsim.networking import *
 from ft4fttsim.masterslave import *
 from ft4fttsim.ethernet import *
-from ft4fttsim import simlogging
 
 
 class Test1Master1Switch1Recorder(unittest.TestCase):
@@ -30,18 +29,12 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         self.switch.connect_inlink(link_master_switch)
         self.switch.connect_outlink(link_switch_recorder)
         self.recorder.connect_inlink(link_switch_recorder)
-        simlogging.env = self.env
-
-    def tearDown(self):
-        simlogging.logger.propagate = False
 
     def test_1EC_simulated__record_1_msg(self):
         """
         Test that if we simulate for the duration of one elementary cycle, the
         recorder records one message.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=self.EC_duration_us)
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 1)
@@ -51,8 +44,6 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         Test that if we simulate for the duration of two elementary cycles, the
         recorder records two messages.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=2 * self.EC_duration_us)
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 2)
@@ -62,8 +53,6 @@ class Test1Master1Switch1Recorder(unittest.TestCase):
         Test that if we simulate for the duration of 3 elementary cycles, the
         recorder records 3 messages.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=3 * self.EC_duration_us)
         received_messages = self.recorder.recorded_messages
         self.assertEqual(len(received_messages), 3)
