@@ -332,6 +332,8 @@ class Message:
             message_type: models the Ethertype field.
 
         """
+        if not isinstance(size_bytes, int):
+            raise FT4FTTSimException("Message size must be integer")
         if not (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
                 Ethernet.MAX_FRAME_SIZE_BYTES):
             raise FT4FTTSimException(

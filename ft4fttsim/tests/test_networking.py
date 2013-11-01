@@ -140,37 +140,39 @@ class TestNetworkDevice(unittest.TestCase):
             sentinel.message, not_connected_outlink)
 
 
-class TestMessageConstructor(unittest.TestCase):
+MINIMUM_ETHERNET_FRAME_SIZE = 64
+MAXIMUM_ETHERNET_FRAME_SIZE = 1518
 
-    def setUp(self):
-        self.env = simpy.Environment()
-        self.minimum_ethernet_frame_size = 64
-        self.maximum_ethernet_frame_size = 1518
 
-    def test_negative_size__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Message, self.env,
-            sentinel.dummy_source, sentinel.dummy_destination, -1,
-            sentinel.dummy_type)
+@pytest.mark.parametrize("size_in_bytes",
+    # 64 is the minimum valid size in bytes
+    [MINIMUM_ETHERNET_FRAME_SIZE,
+    # 1518 is the maximum valid size in bytes
+    MAXIMUM_ETHERNET_FRAME_SIZE] +
+    # also test with a couple of values between the minimum and the
+    # maximum size in bytes
+    list(range(65, 1519, 404)))
+def test_message_constructor_does_not_raise_exception(env,
+        size_in_bytes):
+    try:
+        Message(env, sentinel.dummy_source, sentinel.dummy_destination,
+            size_in_bytes, sentinel.dummy_type)
+    except:
+        assert False, "Message constructor should not raise exception."
 
-    def test_less_than_minimum_size__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Message, self.env,
-            sentinel.dummy_source, sentinel.dummy_destination,
-            self.minimum_ethernet_frame_size - 1, sentinel.dummy_type)
 
-    def test_equal_minimum_size__does_not_raise_exception(self):
-        # check that FT4FTTSimException is not thrown
-        Message(self.env, sentinel.dummy_source, sentinel.dummy_destination,
-            self.minimum_ethernet_frame_size, sentinel.dummy_type)
-
-    def test_greater_than_maximum_size__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Message, self.env,
-            sentinel.dummy_source, sentinel.dummy_destination,
-            self.maximum_ethernet_frame_size + 1, sentinel.dummy_type)
-
-    def test_equal_maximum_size__does_not_raise_exception(self):
-        # check that FT4FTTSimException is not thrown
-        Message(self.env, sentinel.dummy_source, sentinel.dummy_destination,
-            self.maximum_ethernet_frame_size, sentinel.dummy_type)
+@pytest.mark.parametrize("size_in_bytes", [
+    -1000, -1, -0.9, 0, 0.5,
+    MINIMUM_ETHERNET_FRAME_SIZE - 1,
+    MINIMUM_ETHERNET_FRAME_SIZE + 0.5,
+    MAXIMUM_ETHERNET_FRAME_SIZE - 9.1,
+    MAXIMUM_ETHERNET_FRAME_SIZE + 1,
+    10000
+])
+def test_message_constructor_raises_exception(env, size_in_bytes):
+    with pytest.raises(FT4FTTSimException):
+        Message(env, sentinel.dummy_source, sentinel.dummy_destination,
+            size_in_bytes, sentinel.dummy_type)
 
 
 class TestMessage(unittest.TestCase):
