@@ -4,21 +4,43 @@ import unittest
 from mock import sentinel, Mock
 from ft4fttsim.networking import *
 from ft4fttsim.exceptions import FT4FTTSimException
+import pytest
 
 
-class TestLinkConstructor(unittest.TestCase):
+@pytest.mark.parametrize("megabits,propagation_delay", [
+    # negative propagation delay raises exception
+    (10, -1),
+    # zero megabits per second raises exception
+    (0, 1),
+    # negative megabits per second raises exception
+    (-1, 1),
+    # negative megabits per second and negative propagation delay raises
+    # exception
+    (-5, -5),
+])
+def test_link_constructor_raises_exception(env, megabits, propagation_delay):
+    with pytest.raises(FT4FTTSimException):
+        Link(env, megabits, propagation_delay)
 
-    def setUp(self):
-        self.env = simpy.Environment()
 
-    def test_propagation_delay_is_negative__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Link, self.env, 10, -1)
+@pytest.mark.parametrize("megabits,propagation_delay", [
+    # zero propagation delay does not raise an exception
+    (10, 0),
 
-    def test_megabits_per_second_is_zero__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Link, self.env, 0, 1)
-
-    def test_megabits_per_second_is_negative__raises_exception(self):
-        self.assertRaises(FT4FTTSimException, Link, self.env, -1, 1)
+    # example constructor parameters that should not raise an exception
+    (1, 1),
+    (5, 5),
+    (100000, 100000),
+    (0.00001, 0.00001),
+    (0.00001, 100000),
+    (100000, 0.00001),
+])
+def test_link_constructor_does_not_raise_exception(
+        env, megabits, propagation_delay):
+    try:
+        Link(env, megabits, propagation_delay)
+    except:
+        assert False, "Link constructor should not raise exception."
 
 
 class TestLink(unittest.TestCase):
