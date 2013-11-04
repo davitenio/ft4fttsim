@@ -1,13 +1,13 @@
 # author: David Gessner <davidges@gmail.com>
 
-import unittest
+import pytest
 from ft4fttsim.networking import *
 from ft4fttsim.ethernet import *
 
 
-class Test1Player1Recorder(unittest.TestCase):
+class Test1Player1Recorder:
 
-    def setUp(self):
+    def setUp(self, env):
         """
         Set up the following network:
 
@@ -15,7 +15,7 @@ class Test1Player1Recorder(unittest.TestCase):
         | player | ---> | recorder |
         +--------+      +----------+
         """
-        self.env = simpy.Environment()
+        self.env = env
         self.player = MessagePlaybackDevice(self.env, "player")
         self.recorder = MessageRecordingDevice(self.env, "recorder")
         self.link_Mbps = 100
@@ -28,11 +28,12 @@ class Test1Player1Recorder(unittest.TestCase):
 
 class TestSingleMessage(Test1Player1Recorder):
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def setUp(self, env):
         """
         Set up the player sending a single message.
         """
-        Test1Player1Recorder.setUp(self)
+        Test1Player1Recorder.setUp(self, env)
         self.tx_start_time = 0
         self.message_size_bytes = 1518
         self.messages_to_transmit = [Message(self.env, self.player,
@@ -48,7 +49,7 @@ class TestSingleMessage(Test1Player1Recorder):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertEqual(self.messages_to_transmit, received_messages)
+        assert self.messages_to_transmit == received_messages
 
     def test_message_played__arrives_when_expected(self):
         """
@@ -64,16 +65,17 @@ class TestSingleMessage(Test1Player1Recorder):
             self.message_size_bytes) * BITS_PER_BYTE /
             float(self.link_Mbps) + self.link_propagation_delay_us)
         expected_timestamp = self.tx_start_time + time_to_destination_in_us
-        self.assertEqual(timestamp, expected_timestamp)
+        assert timestamp == expected_timestamp
 
 
 class TestTwoMessages(Test1Player1Recorder):
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def setUp(self, env):
         """
         Set up the player sending 2 messages.
         """
-        Test1Player1Recorder.setUp(self)
+        Test1Player1Recorder.setUp(self, env)
         tx_start_time0, tx_start_time1 = range(2)
         self.messages_to_transmit0 = [Message(self.env, self.player,
             self.recorder, Ethernet.MAX_FRAME_SIZE_BYTES,
@@ -95,7 +97,7 @@ class TestTwoMessages(Test1Player1Recorder):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertEqual(len(received_messages), 2)
+        assert len(received_messages) == 2
 
     def test_2_messages_played__equals_the_2_messages_recorded(self):
         """
@@ -105,16 +107,17 @@ class TestTwoMessages(Test1Player1Recorder):
         received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
             self.messages_to_transmit1)
-        self.assertEqual(all_messages_transmitted, received_messages)
+        assert all_messages_transmitted == received_messages
 
 
 class TestEightMessages(Test1Player1Recorder):
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def setUp(self, env):
         """
         Set up the player sending 8 messages.
         """
-        Test1Player1Recorder.setUp(self)
+        Test1Player1Recorder.setUp(self, env)
         outlink = self.player.outlinks[0]
         transmission_start_times = range(8)
         self.all_messages_to_transmit = []
@@ -135,8 +138,7 @@ class TestEightMessages(Test1Player1Recorder):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertEqual(set(self.all_messages_to_transmit),
-            set(received_messages))
+        assert set(self.all_messages_to_transmit) == set(received_messages)
 
     def test_8_messages_played__messages_recorded_same_order(self):
         """
@@ -145,17 +147,18 @@ class TestEightMessages(Test1Player1Recorder):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertEqual(self.all_messages_to_transmit, received_messages)
+        assert self.all_messages_to_transmit == received_messages
 
 
 class Test3BatchesOf2Messages(Test1Player1Recorder):
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def setUp(self, env):
         """
         Set up the player sending 2 messages simultaneously at 3 different
         instants of time.
         """
-        Test1Player1Recorder.setUp(self)
+        Test1Player1Recorder.setUp(self, env)
         tx_start_time0, tx_start_time1, tx_start_time2 = 0, 1, 2
         self.messages_to_transmit0 = [
             Message(self.env, self.player, self.recorder,
@@ -191,7 +194,7 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertEqual(len(received_messages), 6)
+        assert len(received_messages) == 6
 
     def test_3_batches_of_2_messages_played__equals_messages_recorded(self):
         """
@@ -202,8 +205,4 @@ class Test3BatchesOf2Messages(Test1Player1Recorder):
         received_messages = self.recorder.recorded_messages
         all_messages_transmitted = (self.messages_to_transmit0 +
             self.messages_to_transmit1 + self.messages_to_transmit2)
-        self.assertEqual(all_messages_transmitted, received_messages)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        assert all_messages_transmitted == received_messages
