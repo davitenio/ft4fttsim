@@ -2,7 +2,6 @@
 
 import unittest
 from ft4fttsim.networking import *
-from ft4fttsim.masterslave import *
 from ft4fttsim.ethernet import *
 
 
