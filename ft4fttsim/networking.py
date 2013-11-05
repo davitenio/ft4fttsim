@@ -14,12 +14,12 @@ class Link:
     A Link object models a physical link between at most 2 network devices
     (objects of class NetworkDevice). A Link object has a certain transmission
     speed (expressed in megabits per second) and propagation delay (expressed
-    in microseconds). Links are directional, i.e., they have a single start
-    point and a single end point, and messages that are being modeled as being
-    transmitted can only be transmitted from the start point to the end point,
-    but not in the opposite direction. At any one time at most one message can
-    be transmitted through a link. If the transmission of additional messages
-    is ordered through the link, then they will be queued.
+    in microseconds). Links are directional, i.e., they have a single
+    transmitter and a single receiver, and messages that are being modeled as
+    being transmitted can only be transmitted from the transmitter to the
+    receiver, but not in the opposite direction. At any one time at most one
+    message can be transmitted through a link. If the transmission of
+    additional messages is ordered through the link, then they will be queued.
 
     """
     def __init__(self, env, megabits_per_second, propagation_delay_us):
@@ -42,49 +42,74 @@ class Link:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
         self.env = env
         self.resource = simpy.Resource(self.env, capacity=1)
-        self._start_point = None
-        self._end_point = None
+        self._transmitter = None
+        self._receiver = None
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
 
     @property
-    def start_point(self):
-        return self._start_point
+    def transmitter(self):
+        return self._transmitter
 
-    @start_point.setter
-    def start_point(self, device):
+    @transmitter.setter
+    def transmitter(self, device):
         """
-        Set the start point of the link.
+        Set the transmitter of the link.
 
         Arguments:
-            device: The NetworkDevice instance to be set as the start point for
+            device: The NetworkDevice instance to be set as the transmitter for
                 the link, i.e., the transmitter for this link.
 
         """
-        if self._start_point != None:
-            raise FT4FTTSimException("Link already has a start point.")
-        self._start_point = device
+        if self._transmitter != None:
+            raise FT4FTTSimException("Link already has a transmitter.")
+        self._transmitter = device
 
     @property
-    def end_point(self):
-        return self._end_point
+    def receiver(self):
+        return self._receiver
 
-    @end_point.setter
-    def end_point(self, device):
+    @receiver.setter
+    def receiver(self, device):
         """
-        Set the end point of the link.
+        Set the receiver of the link.
 
         Arguments:
-            device: The NetworkDevice instance to be set as the end point for
+            device: The NetworkDevice instance to be set as the receiver for
                 the link, i.e., the receiver for this link.
 
         """
-        if self._end_point != None:
-            raise FT4FTTSimException("Link already has an end point.")
-        self._end_point = device
+        if self._receiver != None:
+            raise FT4FTTSimException("Link already has a receiver.")
+        self._receiver = device
+
+    def transmission_time_us(self, num_bytes):
+        """
+        Return the number of microseconds that it would take a transmitter to
+        transmit num_bytes on the link instance. This is the time from when the
+        first bit until the last bit has left the transmitter.
+
+        Example:
+
+        Assuming a link of 100 Mbps, and 1526 bytes to transmit, results in a
+        transmission time of 1526 * 8 / 10**8 = 122.08 microseconds:
+
+        >>> env = simpy.Environment()
+        >>> link = Link(env, 100, 0)
+        >>> link.transmission_time_us(1526)
+        122.08
+
+        """
+        BITS_PER_BYTE = 8
+        bits_to_transmit = num_bytes * BITS_PER_BYTE
+        transmission_time_us = (bits_to_transmit / self.megabits_per_second)
+        return transmission_time_us
+
+    def __repr__(self):
+        return "{}->{}".format(self._transmitter, self._receiver)
 
     def __str__(self):
-        return "{}->{}".format(self._start_point, self._end_point)
+        return "{}->{}".format(self._transmitter, self._receiver)
 
 
 class NetworkDevice:
@@ -99,11 +124,11 @@ class NetworkDevice:
         self.name = name
 
     def connect_outlink(self, link):
-        link.start_point = self
+        link.transmitter = self
         self.outlinks.append(link)
 
     def connect_inlink(self, link):
-        link.end_point = self
+        link.receiver = self
         self.inlinks.append(link)
 
     def connect_outlink_list(self, link_list):
@@ -269,7 +294,7 @@ class Switch(NetworkDevice):
 
         def find_outlinks(destination):
             """
-            Return a list of the outlinks that have as their endpoint
+            Return a list of the outlinks that have as their receiver
             'destination'.
 
             Arguments:
@@ -277,7 +302,7 @@ class Switch(NetworkDevice):
                 of NetworkDevice instances.
 
             Returns:
-                A list of the outlinks that have as their end point one of the
+                A list of the outlinks that have as their receiver one of the
                 devices in 'destination'.
 
             """
@@ -285,12 +310,12 @@ class Switch(NetworkDevice):
             if isinstance(destination, collections.Iterable):
                 # the destination is multicast
                 for outlink in self.outlinks:
-                    if outlink.end_point in destination:
+                    if outlink.receiver in destination:
                         destination_outlinks.append(outlink)
             else:
                 # the destination is unicast
                 for outlink in self.outlinks:
-                    if outlink.end_point == destination:
+                    if outlink.receiver == destination:
                         destination_outlinks.append(outlink)
             return destination_outlinks
 
@@ -376,36 +401,34 @@ class Message:
     def transmit(self, link):
         """
         Transmit the message instance on the Link link.
+
         """
         log.debug("{} queued for transmission".format(self))
         with link.resource.request() as transmission_request:
             # request access to, and possibly queue for, the link
             yield transmission_request
             log.debug("{} transmission started".format(self))
-            BITS_PER_BYTE = 8
-            # time in microseconds to load the message into the link (this does
-            # not include the propagation time)
-            transmission_time_us = ((Ethernet.PREAMBLE_SIZE_BYTES +
-                Ethernet.SFD_SIZE_BYTES + self.size_bytes) * BITS_PER_BYTE /
-                float(link.megabits_per_second))
             link.message = self
             # wait for the transmission + propagation time to elapse
-            yield self.env.timeout(transmission_time_us +
+            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
+                Ethernet.SFD_SIZE_BYTES + self.size_bytes)
+            yield self.env.timeout(
+                link.transmission_time_us(bytes_to_transmit) +
                 link.propagation_delay_us)
-            # transmission finished, notify the link's end point, but do not
+            # transmission finished, notify the link's receiver, but do not
             # release the link yet
             log.debug("{} transmission finished".format(self))
-            link.end_point.receive_buffer.put(self)
+            link.receiver.receive_buffer.put(self)
             # wait for the duration of the ethernet interframe gap to elapse
-            IFG_duration_us = (Ethernet.IFG_SIZE_BYTES * BITS_PER_BYTE /
-                float(link.megabits_per_second))
-            yield self.env.timeout(IFG_duration_us)
+            yield self.env.timeout(
+                link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
             log.debug("{} inter frame gap finished".format(self))
 
     def is_equivalent(self, message):
         """
         Returns true if self and message are identical except for the message
         ID.
+
         """
         return (self.source == message.source and
             self.destination == message.destination and
