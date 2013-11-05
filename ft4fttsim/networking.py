@@ -178,7 +178,7 @@ class MessageRecordingDevice(NetworkDevice):
 
     @property
     def recorded_timestamps(self):
-        return list(self.reception_records.keys())
+        return sorted(self.reception_records.keys())
 
 
 class MessagePlaybackDevice(NetworkDevice):
@@ -241,6 +241,10 @@ class MessagePlaybackDevice(NetworkDevice):
                     self.transmission_commands[time].items():
                 for message in messages_to_tx:
                     self.instruct_transmission(message, outlink)
+
+    @property
+    def transmission_start_times(self):
+        return sorted(self.transmission_commands.keys())
 
 
 class Switch(NetworkDevice):
