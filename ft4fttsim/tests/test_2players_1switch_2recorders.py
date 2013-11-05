@@ -4,7 +4,6 @@ import unittest
 from ft4fttsim.networking import *
 from ft4fttsim.masterslave import *
 from ft4fttsim.ethernet import *
-from ft4fttsim import simlogging
 
 
 class Test2Players1Switch2Recorders(unittest.TestCase):
@@ -51,9 +50,6 @@ class Test2Players1Switch2Recorders(unittest.TestCase):
         self.switch.connect_outlink(link_switch_recorder2)
         self.recorder2.connect_inlink(link_switch_recorder2)
 
-    def tearDown(self):
-        simlogging.logger.propagate = False
-
 
 class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
 
@@ -84,8 +80,6 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         Test recorder1 receives the message from player1.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
         self.assertTrue(
@@ -95,8 +89,6 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         Test recorder2 does not receive the message from player1.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
         self.assertFalse(
@@ -106,8 +98,6 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         Test recorder2 receives the message from player2.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
         self.assertTrue(
@@ -117,8 +107,6 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         Test recorder1 does not receive the message from player2.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
         self.assertFalse(
@@ -154,8 +142,6 @@ class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
         """
         Test recorder1 receives the message from player1.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
         self.assertTrue(
@@ -165,8 +151,6 @@ class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
         """
         Test recorder1 receives exactly two messages.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
         self.assertEqual(len(received_messages), 2)
@@ -175,8 +159,6 @@ class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
         """
         Test recorder2 receives exactly zero messages.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
         self.assertEqual(len(received_messages), 0)
@@ -185,8 +167,6 @@ class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
         """
         Test recorder1 receives the message from player2.
         """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
         self.assertTrue(

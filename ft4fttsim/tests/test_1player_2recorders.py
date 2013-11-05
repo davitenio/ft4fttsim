@@ -4,7 +4,6 @@ import unittest
 from ft4fttsim.networking import *
 from ft4fttsim.masterslave import *
 from ft4fttsim.ethernet import *
-from ft4fttsim import simlogging
 
 
 class Test1Player2Recorder(unittest.TestCase):
@@ -36,9 +35,6 @@ class Test1Player2Recorder(unittest.TestCase):
         self.player.connect_outlink(link_player_recorder2)
         self.recorder2.connect_inlink(link_player_recorder2)
 
-    def tearDown(self):
-        simlogging.logger.propagate = False
-
 
 class TestOneMessagePerOutlink(Test1Player2Recorder):
 
@@ -65,15 +61,11 @@ class TestOneMessagePerOutlink(Test1Player2Recorder):
         self.player.load_transmission_commands(list_of_commands)
 
     def test_recorder1_gets_correct_message(self):
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages1 = self.recorder1.recorded_messages
         self.assertEqual(self.messages_to_transmit1, received_messages1)
 
     def test_recorder2_gets_correct_message(self):
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
         self.env.run(until=float("inf"))
         received_messages2 = self.recorder2.recorded_messages
         self.assertEqual(self.messages_to_transmit2, received_messages2)

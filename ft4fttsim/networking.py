@@ -178,7 +178,7 @@ class MessageRecordingDevice(NetworkDevice):
 
     @property
     def recorded_timestamps(self):
-        return list(self.reception_records.keys())
+        return sorted(self.reception_records.keys())
 
 
 class MessagePlaybackDevice(NetworkDevice):
@@ -241,6 +241,10 @@ class MessagePlaybackDevice(NetworkDevice):
                     self.transmission_commands[time].items():
                 for message in messages_to_tx:
                     self.instruct_transmission(message, outlink)
+
+    @property
+    def transmission_start_times(self):
+        return sorted(self.transmission_commands.keys())
 
 
 class Switch(NetworkDevice):
@@ -332,6 +336,8 @@ class Message:
             message_type: models the Ethertype field.
 
         """
+        if not isinstance(size_bytes, int):
+            raise FT4FTTSimException("Message size must be integer")
         if not (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
                 Ethernet.MAX_FRAME_SIZE_BYTES):
             raise FT4FTTSimException(
