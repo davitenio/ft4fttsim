@@ -44,3 +44,14 @@ def test_link_constructor_does_not_raise_exception(
 def test_link_created__receiver_is_None(env):
     link = Link(env, 10, 0)
     assert link.receiver is None
+
+
+@pytest.mark.parametrize(
+    "megabits,num_bytes,expected_transmission_time",
+    [(1, 1526, 12208), (10, 1526, 1220.8), (100, 1526, 122.08),
+    (1000, 1526, 12.208), (100, 0, 0)]
+)
+def test_link__transmission_time_us(env, megabits, num_bytes,
+        expected_transmission_time):
+    link = Link(env, megabits, 0)
+    assert link.transmission_time_us(num_bytes) == expected_transmission_time

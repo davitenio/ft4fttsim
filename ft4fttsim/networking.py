@@ -83,6 +83,28 @@ class Link:
             raise FT4FTTSimException("Link already has a receiver.")
         self._receiver = device
 
+    def transmission_time_us(self, num_bytes):
+        """
+        Return the number of microseconds that it would take a transmitter to
+        transmit num_bytes on the link instance. This is the time from when the
+        first bit until the last bit has left the transmitter.
+
+        Example:
+
+        Assuming a link of 100 Mbps, and 1526 bytes to transmit, results in a
+        transmission time of 1526 * 8 / 10**8 = 122.08 microseconds:
+
+        >>> env = simpy.Environment()
+        >>> link = Link(env, 100, 0)
+        >>> link.transmission_time_us(1526)
+        122.08
+
+        """
+        BITS_PER_BYTE = 8
+        bits_to_transmit = num_bytes * BITS_PER_BYTE
+        transmission_time_us = (bits_to_transmit / self.megabits_per_second)
+        return transmission_time_us
+
     def __repr__(self):
         return "{}->{}".format(self._transmitter, self._receiver)
 
@@ -381,19 +403,6 @@ class Message:
         Transmit the message instance on the Link link.
 
         """
-        def transmission_delay(num_bytes, link):
-            """
-            Returns the transmission delay to transmit num_bytes on link (this
-            does not include the propagation time).
-
-            """
-            BITS_PER_BYTE = 8
-            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
-                Ethernet.SFD_SIZE_BYTES + num_bytes)
-            bits_to_transmit = bytes_to_transmit * BITS_PER_BYTE
-            transmission_time_us = (bits_to_transmit /
-                float(link.megabits_per_second))
-            return transmission_time_us
         log.debug("{} queued for transmission".format(self))
         with link.resource.request() as transmission_request:
             # request access to, and possibly queue for, the link
@@ -401,7 +410,10 @@ class Message:
             log.debug("{} transmission started".format(self))
             link.message = self
             # wait for the transmission + propagation time to elapse
-            yield self.env.timeout(transmission_delay(self.size_bytes, link) +
+            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
+                Ethernet.SFD_SIZE_BYTES + self.size_bytes)
+            yield self.env.timeout(
+                link.transmission_time_us(bytes_to_transmit) +
                 link.propagation_delay_us)
             # transmission finished, notify the link's receiver, but do not
             # release the link yet
@@ -409,7 +421,7 @@ class Message:
             link.receiver.receive_buffer.put(self)
             # wait for the duration of the ethernet interframe gap to elapse
             yield self.env.timeout(
-                transmission_delay(Ethernet.IFG_SIZE_BYTES, link))
+                link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
             log.debug("{} inter frame gap finished".format(self))
 
     def is_equivalent(self, message):
