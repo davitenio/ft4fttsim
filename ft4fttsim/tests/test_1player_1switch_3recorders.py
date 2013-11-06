@@ -75,8 +75,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        assert (
-            self.messages_to_transmit[0].is_equivalent(received_messages[0]))
+        assert self.messages_to_transmit[0] == received_messages[0]
 
     def test_message_is_received_by_recorder3(self):
         """
@@ -84,8 +83,7 @@ class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder3.recorded_messages
-        assert (
-            self.messages_to_transmit[0].is_equivalent(received_messages[0]))
+        assert self.messages_to_transmit[0] == received_messages[0]
 
     def test_no_message_is_received_by_recorder2(self):
         """

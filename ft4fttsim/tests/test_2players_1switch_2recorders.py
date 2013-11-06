@@ -82,8 +82,7 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        assert (
-            self.messages_to_transmit1[0].is_equivalent(received_messages[0]))
+        assert self.messages_to_transmit1[0] == received_messages[0]
 
     def test_recorder2_does_not_receive_message_from_player1(self):
         """
@@ -91,8 +90,7 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
-        assert not (
-            self.messages_to_transmit1[0].is_equivalent(received_messages[0]))
+        assert not self.messages_to_transmit1[0] == received_messages[0]
 
     def test_recorder2_receives_message_from_player2(self):
         """
@@ -100,8 +98,7 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
-        assert (
-            self.messages_to_transmit2[0].is_equivalent(received_messages[0]))
+        assert self.messages_to_transmit2[0] == received_messages[0]
 
     def test_recorder1_does_not_receive_message_from_player2(self):
         """
@@ -109,8 +106,7 @@ class Test2ParallelTransmissionPaths(Test2Players1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        assert not (
-            self.messages_to_transmit2[0].is_equivalent(received_messages[0]))
+        assert not self.messages_to_transmit2[0] == received_messages[0]
 
 
 class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
@@ -144,8 +140,7 @@ class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        assert (
-            self.messages_to_transmit1[0].is_equivalent(received_messages[0]))
+        assert self.messages_to_transmit1[0] == received_messages[0]
 
     def test_recorder1_receives_exactly_2_messages(self):
         """
@@ -169,10 +164,8 @@ class TestSingleMessageForRecorder1(Test2Players1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        assert (
-            self.messages_to_transmit2[0].is_equivalent(received_messages[0])
-            or
-            self.messages_to_transmit2[0].is_equivalent(received_messages[1]))
+        assert (self.messages_to_transmit2[0] == received_messages[0] or
+            self.messages_to_transmit2[0] == received_messages[1])
 
 
 if __name__ == '__main__':
