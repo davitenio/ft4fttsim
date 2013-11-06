@@ -63,7 +63,7 @@ class TestSingleMessageForRecorder1(Test1Player1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        self.assertTrue(
+        assert (
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
     def test_no_message_is_received_by_recorder2(self):
@@ -72,7 +72,7 @@ class TestSingleMessageForRecorder1(Test1Player1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
-        self.assertEqual(len(received_messages), 0)
+        assert len(received_messages) == 0
 
 
 class TestSingleMessageForRecorder2(Test1Player1Switch2Recorders):
@@ -97,7 +97,7 @@ class TestSingleMessageForRecorder2(Test1Player1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
-        self.assertTrue(
+        assert (
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
     def test_no_message_is_received_by_recorder1(self):
@@ -106,7 +106,7 @@ class TestSingleMessageForRecorder2(Test1Player1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        self.assertEqual(len(received_messages), 0)
+        assert len(received_messages) == 0
 
 
 class TestSingleMessageForRecorder1AndRecorder2(Test1Player1Switch2Recorders):
@@ -133,7 +133,7 @@ class TestSingleMessageForRecorder1AndRecorder2(Test1Player1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder1.recorded_messages
-        self.assertTrue(
+        assert (
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
     def test_equivalent_message_is_rx_by_recorder2(self):
@@ -142,7 +142,7 @@ class TestSingleMessageForRecorder1AndRecorder2(Test1Player1Switch2Recorders):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder2.recorded_messages
-        self.assertTrue(
+        assert (
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
 

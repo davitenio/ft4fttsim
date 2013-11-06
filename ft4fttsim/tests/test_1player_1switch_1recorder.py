@@ -61,7 +61,7 @@ class TestSingleMessageDestinationIsNotList(Test1Player1Switch1Recorder):
         # create a message instance whose destination field is NOT a list
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertTrue(
+        assert (
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
 
@@ -93,7 +93,7 @@ class TestSingleMessageDestinationIsList(Test1Player1Switch1Recorder):
         """
         self.env.run(until=float("inf"))
         received_messages = self.recorder.recorded_messages
-        self.assertTrue(
+        assert (
             self.messages_to_transmit[0].is_equivalent(received_messages[0]))
 
 
