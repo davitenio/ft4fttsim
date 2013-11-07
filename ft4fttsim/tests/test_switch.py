@@ -6,11 +6,6 @@ from ft4fttsim.ethernet import Ethernet
 import pytest
 
 
-@pytest.fixture
-def switch(env):
-    return Switch(env, "switch")
-
-
 def test_forward_messages__no_outlinks__no_instruct_transmission(env, switch):
     """
     If the switch does not have any outlinks, then the function
