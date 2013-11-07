@@ -10,28 +10,49 @@ Test the following network:
 from ft4fttsim.networking import *
 from ft4fttsim.ethernet import *
 import pytest
+from ft4fttsim.tests.fixturehelper import make_playback_device
+from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
+from ft4fttsim.tests.fixturehelper import make_link
+from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
+
+
+@pytest.fixture(params=LINK_CONFIGS)
+def link(env, request):
+    new_link = make_link(request.param, env)
+    return new_link
 
 
 @pytest.fixture
 def recorder(env, link):
-    recorder = MessageRecordingDevice(env, "recorder attached to 'link'")
+    from ft4fttsim.networking import MessageRecordingDevice
+    recorder = MessageRecordingDevice(env, "recorder")
     recorder.connect_inlink(link)
     return recorder
 
 
-def test_messages_played__equals_messages_recorded(env, player, recorder):
+@pytest.fixture(params=PLAYBACK_CONFIGS)
+def player(request, env, recorder, link):
+    config = request.param
+    new_playback_device = make_playback_device(config, env, recorder,
+        link)
+    return new_playback_device
+
+
+def test_messages_played__equals_messages_recorded(env,
+        player, recorder):
     """
     Test that the recorder receives the messages transmitted by player.
     """
     env.run(until=float("inf"))
-    assert player.messages_to_transmit == recorder.recorded_messages
+    assert (player.messages_to_transmit ==
+        recorder.recorded_messages)
 
 
 BITS_PER_BYTE = 8
 
 
 def test_first_message_played__arrives_when_expected(
-        env, recorder, player, link):
+        env, player, recorder, link):
     """
     Test that the first message transmitted by the player arrives at the
     recorder when expected.

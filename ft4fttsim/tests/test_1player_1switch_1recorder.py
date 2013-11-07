@@ -9,28 +9,47 @@ Execute tests under the following network:
 
 
 import pytest
+from ft4fttsim.tests.fixturehelper import make_playback_device
+from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
+from ft4fttsim.tests.fixturehelper import make_link
+from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
 
 
-@pytest.fixture(params=[(10, 3), (100, 0), (1000, 9)])
-def another_link(env, request):
-    from ft4fttsim.networking import Link
-    Mbps, delay = request.param
-    return Link(env, megabits_per_second=Mbps, propagation_delay_us=delay)
+@pytest.fixture(params=LINK_CONFIGS)
+def link1(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
+
+
+@pytest.fixture(params=LINK_CONFIGS)
+def link2(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
 
 
 @pytest.fixture
-def recorder(env, another_link):
+def recorder(env, link2):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env,
-        "recorder attached to 'another_link'")
-    recorder.connect_inlink(another_link)
+    recorder = MessageRecordingDevice(env, "recorder")
+    recorder.connect_inlink(link2)
     return recorder
 
 
+@pytest.fixture(params=PLAYBACK_CONFIGS)
+def player(request, env, recorder, link1):
+    config = request.param
+    new_playback_device = make_playback_device(config, env, recorder,
+        link1)
+    return new_playback_device
+
+
 @pytest.fixture
-def player_switch_recorder(env, player, switch, recorder, link, another_link):
-    switch.connect_inlink(link)
-    switch.connect_outlink(another_link)
+def player_switch_recorder(env, player, switch, recorder,
+        link1, link2):
+    switch.connect_inlink(link1)
+    switch.connect_outlink(link2)
     return player, switch, recorder
 
 

@@ -5,6 +5,15 @@ import pytest
 from mock import sentinel, Mock
 from ft4fttsim.ethernet import Ethernet
 from ft4fttsim.networking import *
+from ft4fttsim.tests.fixturehelper import make_link
+from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
+
+
+@pytest.fixture(params=LINK_CONFIGS)
+def link(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
 
 
 @pytest.fixture
