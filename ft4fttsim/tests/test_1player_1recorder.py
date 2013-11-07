@@ -21,6 +21,7 @@ def recorder(env, link):
 
 @pytest.fixture(params=[
     "single message",
+    "single message where destination is list",
     "2 messages",
     "8 messages",
     "3 batches of 2 messages",
@@ -30,6 +31,14 @@ def player(request, env, recorder, link):
     player.connect_outlink(link)
     if request.param == "single message":
         messages = [Message(env, player, recorder, 1518, "message")]
+        player.load_transmission_commands(
+            {
+                0: {link: messages}
+            }
+        )
+        player.messages_to_transmit = messages
+    elif request.param == "single message where destination is list":
+        messages = [Message(env, player, [recorder], 158, "message")]
         player.load_transmission_commands(
             {
                 0: {link: messages}
