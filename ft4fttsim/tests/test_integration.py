@@ -12,11 +12,6 @@ def device(env):
     return NetworkDevice(env, "test device")
 
 
-@pytest.fixture
-def link(env):
-    return Link(env, 10, 0)
-
-
 @pytest.fixture(params=list(range(3)) + [20])
 def multiple_links(env, request):
     num_links = request.param

@@ -12,12 +12,6 @@ from ft4fttsim.ethernet import *
 import pytest
 
 
-@pytest.fixture(params=[(10, 3), (100, 0), (1000, 9)])
-def link(env, request):
-    Mbps, delay = request.param
-    return Link(env, megabits_per_second=Mbps, propagation_delay_us=delay)
-
-
 @pytest.fixture
 def recorder(env, link):
     recorder = MessageRecordingDevice(env, "recorder")
