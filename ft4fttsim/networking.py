@@ -424,7 +424,7 @@ class Message:
                 link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
             log.debug("{} inter frame gap finished".format(self))
 
-    def is_equivalent(self, message):
+    def __eq__(self, message):
         """
         Returns true if self and message are identical except for the message
         ID.

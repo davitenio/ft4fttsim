@@ -1,100 +1,133 @@
 # author: David Gessner <davidges@gmail.com>
+"""
+Perform tests under the following network:
 
-import unittest
-from ft4fttsim.networking import *
-from ft4fttsim.masterslave import *
-from ft4fttsim.ethernet import *
+                   +--------+  link1  +-----------+
+                   |        | ------> | recorder1 |
++--------+  link0  |        |         +-----------+
+| player | ------> | switch |
++--------+         |        |  link2  +-----------+
+                   |        | ------> | recorder2 |
+                   +--------+         +-----------+
+                        | link3
+                        v
+                  +-----------+
+                  | recorder3 |
+                  +-----------+
 
+"""
 
-class Test1Player1Switch3Recorders(unittest.TestCase):
-
-    def setUp(self):
-        """
-        Set up the following network:
-
-                        +--------+     +-----------+
-                        |        | --> | recorder1 |
-        +--------+      |        |     +-----------+
-        | player | ---> | switch |
-        +--------+      |        |     +-----------+
-                        |        | --> | recorder2 |
-                        +--------+     +-----------+
-                             |
-                             v
-                       +-----------+
-                       | recorder3 |
-                       +-----------+
-        """
-        self.env = simpy.Environment()
-        self.player = MessagePlaybackDevice(self.env, "player")
-        self.switch = Switch(self.env, "switch")
-        self.recorder1 = MessageRecordingDevice(self.env, "recorder1")
-        self.recorder2 = MessageRecordingDevice(self.env, "recorder2")
-        self.recorder3 = MessageRecordingDevice(self.env, "recorder3")
-        self.link_Mbps = 100
-        self.link_propagation_delay_us = 3
-        link_player_switch = Link(self.env, self.link_Mbps,
-            self.link_propagation_delay_us)
-        self.player.connect_outlink(link_player_switch)
-        self.switch.connect_inlink(link_player_switch)
-        link_switch_recorder1 = Link(self.env, self.link_Mbps,
-            self.link_propagation_delay_us)
-        self.switch.connect_outlink(link_switch_recorder1)
-        self.recorder1.connect_inlink(link_switch_recorder1)
-        link_switch_recorder2 = Link(self.env, self.link_Mbps,
-            self.link_propagation_delay_us)
-        self.switch.connect_outlink(link_switch_recorder2)
-        self.recorder2.connect_inlink(link_switch_recorder2)
-        link_switch_recorder3 = Link(self.env, self.link_Mbps,
-            self.link_propagation_delay_us)
-        self.switch.connect_outlink(link_switch_recorder3)
-        self.recorder3.connect_inlink(link_switch_recorder3)
+import pytest
+from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
+from ft4fttsim.tests.fixturehelper import make_playback_device
+from ft4fttsim.tests.fixturehelper import make_link
 
 
-class TestSingleMessageForRecorder1AndRecorder3(Test1Player1Switch3Recorders):
-
-    def setUp(self):
-        """
-        Set up player sending a single multicast message to recorder1 and
-        recorder3.
-        """
-        Test1Player1Switch3Recorders.setUp(self)
-        tx_start_time = 0
-        message_size_bytes = Ethernet.MAX_FRAME_SIZE_BYTES
-        self.messages_to_transmit = [Message(self.env, self.player,
-            [self.recorder1, self.recorder3],
-            message_size_bytes, "message for recorder 1 and 3")]
-        outlink = self.player.outlinks[0]
-        transmission_command = {outlink: self.messages_to_transmit}
-        list_of_commands = {tx_start_time: transmission_command}
-        self.player.load_transmission_commands(list_of_commands)
-
-    def test_message_is_received_by_recorder1(self):
-        """
-        Test that recorder1 receives the forwarded message.
-        """
-        self.env.run(until=float("inf"))
-        received_messages = self.recorder1.recorded_messages
-        self.assertTrue(
-            self.messages_to_transmit[0].is_equivalent(received_messages[0]))
-
-    def test_message_is_received_by_recorder3(self):
-        """
-        Test that recorder3 receives the forwarded message.
-        """
-        self.env.run(until=float("inf"))
-        received_messages = self.recorder3.recorded_messages
-        self.assertTrue(
-            self.messages_to_transmit[0].is_equivalent(received_messages[0]))
-
-    def test_no_message_is_received_by_recorder2(self):
-        """
-        Test that recorder2 does not receive the message.
-        """
-        self.env.run(until=float("inf"))
-        received_messages = self.recorder2.recorded_messages
-        self.assertNotIn(self.messages_to_transmit[0], received_messages)
+@pytest.fixture(params=[(100, 0)])
+def link0(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.fixture(params=[(100, 0)])
+def link1(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
+
+
+@pytest.fixture(params=[(100, 0)])
+def link2(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
+
+
+@pytest.fixture(params=[(100, 0)])
+def link3(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
+
+
+@pytest.fixture
+def recorder1(env, link1):
+    from ft4fttsim.networking import MessageRecordingDevice
+    recorder = MessageRecordingDevice(env, "recorder1")
+    recorder.connect_inlink(link1)
+    return recorder
+
+
+@pytest.fixture
+def recorder2(env, link2):
+    from ft4fttsim.networking import MessageRecordingDevice
+    recorder = MessageRecordingDevice(env, "recorder2")
+    recorder.connect_inlink(link2)
+    return recorder
+
+
+@pytest.fixture
+def recorder3(env, link3):
+    from ft4fttsim.networking import MessageRecordingDevice
+    recorder = MessageRecordingDevice(env, "recorder3")
+    recorder.connect_inlink(link3)
+    return recorder
+
+
+@pytest.fixture(params=PLAYBACK_CONFIGS)
+def player_rec13(request, env, recorder1, recorder3, link0):
+    """
+    Create a message playback device that sends messages to recorder 1 and 3.
+
+    """
+    config = request.param
+    new_playback_device = make_playback_device(config, env,
+        [recorder1, recorder3], link0)
+    return new_playback_device
+
+
+@pytest.fixture
+def player_rec13_switch_recorder1_recorder2_recorder3(env, player_rec13,
+        switch, recorder1, recorder2, recorder3, link0, link1, link2, link3):
+    switch.connect_inlink(link0)
+    switch.connect_outlink(link1)
+    switch.connect_outlink(link2)
+    switch.connect_outlink(link3)
+    return player_rec13, switch, recorder1, recorder2, recorder3
+
+
+def test_messages_are_received_by_recorder1(env,
+        player_rec13_switch_recorder1_recorder2_recorder3):
+    """
+    Test that recorder1 receives the messages.
+    """
+    env.run(until=float("inf"))
+    player = player_rec13_switch_recorder1_recorder2_recorder3[0]
+    recorder1 = player_rec13_switch_recorder1_recorder2_recorder3[2]
+    received_messages = recorder1.recorded_messages
+    assert player.messages_to_transmit == received_messages
+
+
+def test_messages_are_received_by_recorder3(env,
+        player_rec13_switch_recorder1_recorder2_recorder3):
+    """
+    Test that recorder3 receives the messages.
+    """
+    env.run(until=float("inf"))
+    player = player_rec13_switch_recorder1_recorder2_recorder3[0]
+    recorder3 = player_rec13_switch_recorder1_recorder2_recorder3[4]
+    received_messages = recorder3.recorded_messages
+    assert player.messages_to_transmit == received_messages
+
+
+def test_no_message_is_received_by_recorder2(env,
+        player_rec13_switch_recorder1_recorder2_recorder3):
+    """
+    Test that recorder2 does not receive the message.
+    """
+    env.run(until=float("inf"))
+    player = player_rec13_switch_recorder1_recorder2_recorder3[0]
+    recorder2 = player_rec13_switch_recorder1_recorder2_recorder3[3]
+    received_messages = recorder2.recorded_messages
+    assert player.messages_to_transmit not in received_messages

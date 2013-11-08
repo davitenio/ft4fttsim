@@ -10,3 +10,9 @@ def env():
     new_env = simpy.Environment()
     ft4fttsim.simlogging.env = new_env
     return new_env
+
+
+@pytest.fixture
+def switch(env):
+    from ft4fttsim.networking import Switch
+    return Switch(env, "switch")
