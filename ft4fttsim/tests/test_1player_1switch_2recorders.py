@@ -15,24 +15,23 @@ import pytest
 from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
 from ft4fttsim.tests.fixturehelper import make_playback_device
 from ft4fttsim.tests.fixturehelper import make_link
-from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
 
 
-@pytest.fixture(params=LINK_CONFIGS)
+@pytest.fixture(params=[(1000, 123)])
 def link0(env, request):
     config = request.param
     new_link = make_link(config, env)
     return new_link
 
 
-@pytest.fixture(params=LINK_CONFIGS)
+@pytest.fixture(params=[(1000, 123)])
 def link1(env, request):
     config = request.param
     new_link = make_link(config, env)
     return new_link
 
 
-@pytest.fixture(params=LINK_CONFIGS)
+@pytest.fixture(params=[(1000, 123)])
 def link2(env, request):
     config = request.param
     new_link = make_link(config, env)
