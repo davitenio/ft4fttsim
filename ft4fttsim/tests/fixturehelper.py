@@ -3,7 +3,6 @@
 
 PLAYBACK_CONFIGS = [
     "single message",
-    "single message where destination is list",
     "2 messages",
     "8 messages",
     "3 batches of 2 messages",
@@ -30,15 +29,6 @@ def make_playback_device(config, env, msg_destination, link):
     player.connect_outlink(link)
     if config == "single message":
         messages = [Message(env, player, msg_destination, 1518, "message")]
-        player.load_transmission_commands(
-            {
-                0: {link: messages}
-            }
-        )
-        player.messages_to_transmit = messages
-    elif config == "single message where destination is list":
-        messages = [Message(env, player, [msg_destination], 158,
-            "message")]
         player.load_transmission_commands(
             {
                 0: {link: messages}
