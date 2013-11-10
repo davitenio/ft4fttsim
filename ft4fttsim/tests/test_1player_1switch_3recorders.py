@@ -125,10 +125,10 @@ def test_messages_are_received_by_recorder3(
 def test_no_message_is_received_by_recorder2(
         env, player_rec13_switch_recorder1_recorder2_recorder3):
     """
-    Test that recorder2 does not receive the message.
+    Test that recorder2 does not receive any message.
     """
     env.run(until=float("inf"))
     player = player_rec13_switch_recorder1_recorder2_recorder3[0]
     recorder2 = player_rec13_switch_recorder1_recorder2_recorder3[3]
     received_messages = recorder2.recorded_messages
-    assert player.messages_to_transmit not in received_messages
+    assert len(received_messages) == 0
