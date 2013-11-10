@@ -170,7 +170,7 @@ class MessageRecordingDevice(NetworkDevice):
 
     def __init__(self, env, name):
         NetworkDevice.__init__(self, env, name)
-        self.proc = env.process(self.run())
+        env.process(self.run())
         self.reception_records = {}
 
     def connect_outlink(self, link):
@@ -221,7 +221,7 @@ class MessagePlaybackDevice(NetworkDevice):
 
     def __init__(self, env, name):
         NetworkDevice.__init__(self, env, name)
-        self.proc = env.process(self.run())
+        env.process(self.run())
         self.transmission_commands = {}
 
     def load_transmission_commands(self, transmission_commands):
@@ -280,7 +280,7 @@ class Switch(NetworkDevice):
 
     def __init__(self, env, name):
         NetworkDevice.__init__(self, env, name)
-        self.proc = env.process(self.run())
+        env.process(self.run())
 
     def forward_messages(self, message_list):
         """
