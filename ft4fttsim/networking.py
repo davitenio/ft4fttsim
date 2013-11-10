@@ -120,7 +120,8 @@ class NetworkDevice:
         self.outlinks = []
         # list of inlinks to which the network device is connected
         self.inlinks = []
-        self.receive_buffer = simpy.Store(self.env)
+        # Single input port shared by all incoming links.
+        self.input_port = simpy.Store(self.env)
         self.name = name
 
     def connect_outlink(self, link):
@@ -186,7 +187,7 @@ class MessageRecordingDevice(NetworkDevice):
         while True:
             log.debug("{} sleeping until next reception".format(self))
             # sleep until a message is in the receive buffer
-            msg = yield self.receive_buffer.get()
+            msg = yield self.input_port.get()
             received_messages = [msg]
             log.debug("{} received {}".format(
                 self, received_messages))
@@ -329,7 +330,7 @@ class Switch(NetworkDevice):
     def run(self):
         while True:
             # sleep until a message is in the receive buffer
-            msg = yield self.receive_buffer.get()
+            msg = yield self.input_port.get()
             received_messages = [msg]
             self.forward_messages(received_messages)
 
@@ -418,7 +419,7 @@ class Message:
             # transmission finished, notify the link's receiver, but do not
             # release the link yet
             log.debug("{} transmission finished".format(self))
-            link.receiver.receive_buffer.put(self)
+            link.receiver.input_port.put(self)
             # wait for the duration of the ethernet interframe gap to elapse
             yield self.env.timeout(
                 link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
