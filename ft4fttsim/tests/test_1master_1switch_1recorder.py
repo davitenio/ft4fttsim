@@ -1,75 +1,68 @@
 # author: David Gessner <davidges@gmail.com>
+"""
+Perform tests under the following network:
 
-import unittest
-from ft4fttsim.networking import *
-from ft4fttsim.masterslave import *
-from ft4fttsim.ethernet import *
-from ft4fttsim import simlogging
++--------+      +--------+      +----------+
+| master | ---> | switch | ---> | recorder |
++--------+      +--------+      +----------+
+"""
 
-
-class Test1Master1Switch1Recorder(unittest.TestCase):
-
-    def setUp(self):
-        """
-        Set up the following network:
-
-        +--------+      +--------+      +----------+
-        | master | ---> | switch | ---> | recorder |
-        +--------+      +--------+      +----------+
-        """
-        self.switch = Switch("test switch")
-        self.recorder = MessageRecordingDevice("recorder")
-        # configured elementary cycle duration in microseconds
-        self.EC_duration_us = 10 ** 9
-        self.master = Master("test master", [self.recorder],
-            self.EC_duration_us)
-        link_master_switch = Link(100, 0)
-        link_switch_recorder = Link(100, 0)
-        self.master.connect_outlink(link_master_switch)
-        self.switch.connect_inlink(link_master_switch)
-        self.switch.connect_outlink(link_switch_recorder)
-        self.recorder.connect_inlink(link_switch_recorder)
-        # initialize SimPy
-        initialize()
-        for device in [self.master, self.switch, self.recorder]:
-            activate(device, device.run(), at=0.0)
-
-    def tearDown(self):
-        simlogging.logger.propagate = False
-
-    def test_1EC_simulated__record_1_msg(self):
-        """
-        Test that if we simulate for the duration of one elementary cycle, the
-        recorder records one message.
-        """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
-        simulate(until=self.EC_duration_us)
-        received_messages = self.recorder.get_recorded_messages()
-        self.assertEqual(len(received_messages), 1)
-
-    def test_2EC_simulated__record_2_msg(self):
-        """
-        Test that if we simulate for the duration of two elementary cycles, the
-        recorder records two messages.
-        """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
-        simulate(until=2 * self.EC_duration_us)
-        received_messages = self.recorder.get_recorded_messages()
-        self.assertEqual(len(received_messages), 2)
-
-    def test_3EC_simulated__record_3_msg(self):
-        """
-        Test that if we simulate for the duration of 3 elementary cycles, the
-        recorder records 3 messages.
-        """
-        # uncomment the next line to enable logging during this test
-        #simlogging.logger.propagate = True
-        simulate(until=3 * self.EC_duration_us)
-        received_messages = self.recorder.get_recorded_messages()
-        self.assertEqual(len(received_messages), 3)
+import pytest
+from ft4fttsim.tests.fixturehelper import make_link
+from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.fixture(params=LINK_CONFIGS)
+def link1(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
+
+
+@pytest.fixture(params=LINK_CONFIGS)
+def link2(env, request):
+    config = request.param
+    new_link = make_link(config, env)
+    return new_link
+
+
+@pytest.fixture
+def recorder(env, link2):
+    from ft4fttsim.networking import MessageRecordingDevice
+    recorder = MessageRecordingDevice(env, "recorder")
+    recorder.connect_inlink(link2)
+    return recorder
+
+
+@pytest.fixture(params=range(4))
+def master(request, env, link1, recorder):
+    from ft4fttsim.masterslave import Master
+    # number of trigger messages per elementary cycle
+    num_TMs_per_EC = request.param
+    # configured elementary cycle duration in microseconds
+    EC_duration_us = 10 ** 9
+    new_master = Master(env, "master", [recorder], EC_duration_us,
+                        num_TMs_per_EC)
+    new_master.connect_outlink(link1)
+    return new_master
+
+
+@pytest.fixture
+def master_switch_recorder(env, master, switch, recorder, link1, link2):
+    switch.connect_inlink(link1)
+    switch.connect_outlink(link2)
+    return master, switch, recorder
+
+
+@pytest.mark.parametrize("num_ECs", range(1, 4))
+def test_num_ECs_simulated__record_correct_number_of_messages(
+        env, master_switch_recorder, num_ECs):
+    """
+    Test that the recorder records master.num_TMs_per_EC trigger messages in
+    each elementary cycle.
+    """
+    master = master_switch_recorder[0]
+    recorder = master_switch_recorder[2]
+    env.run(until=num_ECs * master.EC_duration_us)
+    received_messages = recorder.recorded_messages
+    assert len(received_messages) == num_ECs * master.num_TMs_per_EC
