@@ -1,7 +1,7 @@
 # author: David Gessner <davidges@gmail.com>
 
 import pytest
-from mock import sentinel, Mock
+from unittest.mock import sentinel, Mock
 from ft4fttsim.networking import *
 from ft4fttsim.tests.fixturehelper import make_link
 from ft4fttsim.tests.fixturehelper import LINK_CONFIGS

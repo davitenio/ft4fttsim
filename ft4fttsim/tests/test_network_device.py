@@ -12,7 +12,7 @@ def new_device(env):
 @pytest.fixture(params=range(5))
 def links(env, request):
     from ft4fttsim.networking import Link
-    from mock import Mock
+    from unittest.mock import Mock
     num_links = request.param
     link_list = [
         Mock(spec_set=Link, name="link " + str(i))
@@ -52,7 +52,7 @@ def test_inlink_list(new_device, links):
 
 def test_instruct_transmission__no_outlink__raise_exception(new_device):
     from ft4fttsim.networking import FT4FTTSimException
-    from mock import sentinel
+    from unittest.mock import sentinel
     not_connected_outlink = sentinel.dummy_link
     with pytest.raises(FT4FTTSimException):
         new_device.instruct_transmission(

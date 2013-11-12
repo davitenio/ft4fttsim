@@ -3,7 +3,7 @@
 import pytest
 from ft4fttsim.networking import Message
 from ft4fttsim.exceptions import FT4FTTSimException
-from mock import sentinel, Mock
+from unittest.mock import sentinel, Mock
 from ft4fttsim.ethernet import Ethernet
 
 
