@@ -9,7 +9,7 @@ PLAYBACK_CONFIGS = [
 ]
 
 
-def make_playback_device(config, env, msg_destination, link):
+def make_playback_device(config, env, msg_destination, link, name="player"):
     """
     Return a new instance of MessagePlaybackDevice configured according to the
     arguments.
@@ -25,7 +25,7 @@ def make_playback_device(config, env, msg_destination, link):
 
     """
     from ft4fttsim.networking import MessagePlaybackDevice, Message
-    player = MessagePlaybackDevice(env, "player")
+    player = MessagePlaybackDevice(env, name)
     player.connect_outlink(link)
     if config == "single message":
         messages = [Message(env, player, msg_destination, 1518, "message")]
