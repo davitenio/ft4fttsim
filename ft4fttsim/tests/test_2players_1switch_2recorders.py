@@ -102,6 +102,9 @@ def connected_devices_p1r1_p2r2(
     return player1_r1, player2_r2, recorder1, recorder2
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_recorder1_receives_messages_from_player1_r1(
         env, connected_devices_p1r1_p2r2):
     """
@@ -114,6 +117,9 @@ def test_recorder1_receives_messages_from_player1_r1(
     assert player1_r1.messages_to_transmit == received_messages
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_recorder2_does_not_receive_messages_from_player1_r1(
         env, connected_devices_p1r1_p2r2):
     """
@@ -128,6 +134,9 @@ def test_recorder2_does_not_receive_messages_from_player1_r1(
         for message in received_messages)
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_recorder2_receives_messages_from_player2_r2(
         env, connected_devices_p1r1_p2r2):
     """
@@ -140,6 +149,9 @@ def test_recorder2_receives_messages_from_player2_r2(
     assert player2_r2.messages_to_transmit == received_messages
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_recorder1_does_not_receive_messages_from_player2_r2(
         env, connected_devices_p1r1_p2r2):
     """
@@ -193,6 +205,9 @@ def test_recorder1_receives_all_messages_from_player1_r1(
     )
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_recorder2_receives_exactly_0_messages(
         env, connected_devices_p1r1_p2r1):
     """

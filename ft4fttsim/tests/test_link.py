@@ -41,9 +41,9 @@ def test_link_constructor_does_not_raise_exception(
         assert False, "Link constructor should not raise exception."
 
 
-def test_link_created__receiver_is_None(env):
+def test_link_created__receiver_port_is_None(env):
     link = Link(env, 10, 0)
-    assert link.receiver is None
+    assert link.receiver_port is None
 
 
 @pytest.mark.parametrize(

@@ -2,6 +2,7 @@
 
 from ft4fttsim.networking import NetworkDevice, Message
 from ft4fttsim.ethernet import Ethernet
+from ft4fttsim.simlogging import log
 import simpy
 
 
@@ -34,15 +35,19 @@ class Master(NetworkDevice):
         self.EC_count = 0
 
     def broadcast_trigger_message(self):
-        for outlink in self.outlinks:
-            trigger_message = Message(
-                self.env, self, self.slaves,
-                Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
-            self.instruct_transmission(trigger_message, outlink)
+        log.debug("{} broadcasting trigger message".format(self))
+        for port in self.output_ports:
+            trigger_message = Message(self.env, self, self.slaves,
+                                      Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
+            log.debug(
+                "{} instruct transmission of trigger message".format(self))
+            self.env.process(
+                self.instruct_transmission(trigger_message, port))
 
     def run(self):
         while True:
             self.EC_count += 1
+            log.debug("{} starting EC ".format(self, self.EC_count))
             time_last_EC_start = self.env.now
             for message_count in range(self.num_TMs_per_EC):
                 self.broadcast_trigger_message()

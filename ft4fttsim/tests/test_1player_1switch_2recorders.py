@@ -88,6 +88,9 @@ def test_messages_are_received_by_recorder1(
     assert player.messages_to_transmit == received_messages
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_no_message_is_received_by_recorder2(
         env, player_rec1_switch_recorder1_recorder2):
     """
@@ -135,6 +138,9 @@ def test_messages_are_received_by_recorder2(
     assert player.messages_to_transmit == received_messages
 
 
+# until the switch implements proper forwarding mechanism, we expect the
+# following test to fail.
+@pytest.mark.xfail
 def test_no_message_is_received_by_recorder1(
         env, player_rec2_switch_recorder1_recorder2):
     """

@@ -7,6 +7,27 @@ from ft4fttsim.simlogging import log
 import collections
 
 
+class InputPort(simpy.Store):
+
+    def __init__(self, env, device):
+        simpy.Store.__init__(self, env)
+        self.device = device
+
+    def __repr__(self):
+        return "{}-inport".format(self.device)
+
+
+class OutputPort(simpy.Store):
+
+    def __init__(self, env, device):
+        simpy.Store.__init__(self, env, capacity=1)
+        self.device = device
+
+    def __repr__(self):
+        return "{}-outport0x{}".format(
+            self.device, id(self))
+
+
 class Link:
     """
     Class whose instances model links used in an Ethernet network.
@@ -42,46 +63,48 @@ class Link:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
         self.env = env
         self.resource = simpy.Resource(self.env, capacity=1)
-        self._transmitter = None
-        self._receiver = None
+        self._transmitter_port = None
+        self._receiver_port = None
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
+        env.process(self.run())
 
     @property
-    def transmitter(self):
-        return self._transmitter
+    def transmitter_port(self):
+        return self._transmitter_port
 
-    @transmitter.setter
-    def transmitter(self, device):
+    @transmitter_port.setter
+    def transmitter_port(self, port):
         """
-        Set the transmitter of the link.
+        Set the port that will be transmitting through the link instance.
 
         Arguments:
-            device: The NetworkDevice instance to be set as the transmitter for
-                the link, i.e., the transmitter for this link.
+            port: The port of the NetworkDevice instance to be set as the
+                transmitter port for the link.
 
         """
-        if self._transmitter is not None:
+        if self._transmitter_port is not None:
             raise FT4FTTSimException("Link already has a transmitter.")
-        self._transmitter = device
+        self._transmitter_port = port
 
     @property
-    def receiver(self):
-        return self._receiver
+    def receiver_port(self):
+        return self._receiver_port
 
-    @receiver.setter
-    def receiver(self, device):
+    @receiver_port.setter
+    def receiver_port(self, port):
         """
-        Set the receiver of the link.
+        Set the port that will be receiving the traffic through the link
+        instance.
 
         Arguments:
-            device: The NetworkDevice instance to be set as the receiver for
-                the link, i.e., the receiver for this link.
+            port: The port of the NetworkDevice instance to be set as the
+                receiver port for the link.
 
         """
-        if self._receiver is not None:
+        if self._receiver_port is not None:
             raise FT4FTTSimException("Link already has a receiver.")
-        self._receiver = device
+        self._receiver_port = port
 
     def transmission_time_us(self, num_bytes):
         """
@@ -105,32 +128,54 @@ class Link:
         transmission_time_us = (bits_to_transmit / self.megabits_per_second)
         return transmission_time_us
 
+    def run(self):
+        """
+        Get a message from the transmitter port and simulate its transmission.
+
+        """
+        while True:
+            message = yield self.transmitter_port.get()
+            log.debug("{} transmission of {} started".format(self, message))
+            # wait for the transmission + propagation time to elapse
+            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
+                                 Ethernet.SFD_SIZE_BYTES +
+                                 message.size_bytes)
+            yield self.env.timeout(
+                self.transmission_time_us(bytes_to_transmit) +
+                self.propagation_delay_us)
+            log.debug("{} transmission of {} finished".format(self, message))
+            self.receiver_port.put(message)
+            # wait for the duration of the ethernet interframe gap to elapse
+            yield self.env.timeout(
+                self.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
+            log.debug("{} inter frame gap finished".format(self))
+
     def __repr__(self):
-        return "{}->{}".format(self._transmitter, self._receiver)
+        return "{}->{}".format(self._transmitter_port, self._receiver_port)
 
     def __str__(self):
-        return "{}->{}".format(self._transmitter, self._receiver)
+        return "{}->{}".format(self._transmitter_port, self._receiver_port)
 
 
 class NetworkDevice:
 
     def __init__(self, env, name):
         self.env = env
-        # list of outlinks to which the network device is connected
-        self.outlinks = []
-        # list of inlinks to which the network device is connected
-        self.inlinks = []
-        # Single input port shared by all incoming links.
-        self.input_port = simpy.Store(self.env)
+        # Single input port shared by all incoming links. In a physical system
+        # there would be a port for each individual incoming link. For our
+        # modeling purposes, however, a single port for all incoming links is
+        # enough.
+        self.input_port = InputPort(env, self)
+        self.output_ports = []
         self.name = name
 
     def connect_outlink(self, link):
-        link.transmitter = self
-        self.outlinks.append(link)
+        new_output_port = OutputPort(self.env, self)
+        self.output_ports.append(new_output_port)
+        link.transmitter_port = new_output_port
 
     def connect_inlink(self, link):
-        link.receiver = self
-        self.inlinks.append(link)
+        link.receiver_port = self.input_port
 
     def connect_outlink_list(self, link_list):
         for link in link_list:
@@ -140,14 +185,30 @@ class NetworkDevice:
         for link in link_list:
             self.connect_inlink(link)
 
-    def instruct_transmission(self, message, outlink):
+    def instruct_transmission(self, message, output_port):
+        """
+        Note that this is a generator function. It should not be called
+        directly, but only as a parameter to the process() method of a simpy
+        Environment instance.
+
+        Example:
+
+        >>> env = simpy.Environment()
+        >>> d = NetworkDevice(env, "some device")
+        >>> m = Message(env, d, d, 1234, "some message")
+        >>> L = Link(env, 100, 3)
+        >>> d.connect_outlink(L)
+        >>> env.process(d.instruct_transmission(m, d.output_ports[0]))
+        <Process(instruct_transmission) object at 0x...>
+
+        """
         log.debug("{} instructing transmission of {} on {}".format(
-            self, message, outlink))
-        if outlink not in self.outlinks:
-            raise FT4FTTSimException("{} is not an outlink of {}".format(
-                outlink, self))
-        transmission = message.transmit(outlink)
-        self.env.process(transmission)
+            self, message, output_port))
+        if output_port not in self.output_ports:
+            raise FT4FTTSimException("{} is not an output_port of {}".format(
+                output_port, self))
+        log.debug("{} queued for transmission".format(message))
+        yield output_port.put(message)
 
     def __str__(self):
         return self.name
@@ -236,14 +297,14 @@ class MessagePlaybackDevice(NetworkDevice):
                 should be a dictionary whose keys are instants of time when
                 message transmissions should be instructed. Each of the values
                 of the dictionary should be another dictionary whose keys are
-                the outlinks on which transmissions should be ordered and
+                the output ports on which transmissions should be ordered and
                 whose values are lists of messages to be transmitted through
-                the corresponding outlink. Example:
+                the corresponding output port. Example:
 
                 {
-                    0.0:  {outlink1: [message1, message2]},
-                    12.0: {outlink1: [message3]},
-                    13.5: {outlink3: [message4, message5, message6]}
+                    0.0:  {outport1: [message1, message2]},
+                    12.0: {outport1: [message3]},
+                    13.5: {outport3: [message4, message5, message6]}
                 }
 
         """
@@ -263,10 +324,11 @@ class MessagePlaybackDevice(NetworkDevice):
             log.debug("{} sleeping until next transmission".format(self))
             # sleep until next transmission time
             yield self.env.timeout(delay_before_next_tx_order)
-            for outlink, messages_to_tx in \
+            for outport, messages_to_tx in \
                     self.transmission_commands[time].items():
                 for message in messages_to_tx:
-                    self.instruct_transmission(message, outlink)
+                    self.env.process(
+                        self.instruct_transmission(message, outport))
 
     @property
     def transmission_start_times(self):
@@ -285,47 +347,41 @@ class Switch(NetworkDevice):
 
     def forward_messages(self, message_list):
         """
-        Forward each message in 'message_list' to the appropriate outlink.
+        Forward each message in 'message_list' through the appropriate output
+        port.
 
-        Note that forwarding a message from an inlink to an outlink is
+        Note that forwarding a message from an input port to an output port is
         implemented as creating a new message instance based on the message
-        in the inlink, and transmitting the new message instance on the
-        outlink.
+        in the input port, and transmitting the new message instance on the
+        output port.
         """
 
-        def find_outlinks(destination):
+        def find_output_ports(destination):
             """
-            Return a list of the outlinks that have as their receiver
-            'destination'.
+            Return a list of the output ports that according to the forwarding
+            table lead to 'destination'.
 
             Arguments:
                 destination: an instance of class NetworkDevice or an iterable
-                of NetworkDevice instances.
+                    of NetworkDevice instances.
 
             Returns:
-                A list of the outlinks that have as their receiver one of the
-                devices in 'destination'.
+                A list of the output ports that lead to the devices in
+                'destination'.
 
             """
-            destination_outlinks = []
-            if isinstance(destination, collections.Iterable):
-                # the destination is multicast
-                for outlink in self.outlinks:
-                    if outlink.receiver in destination:
-                        destination_outlinks.append(outlink)
-            else:
-                # the destination is unicast
-                for outlink in self.outlinks:
-                    if outlink.receiver == destination:
-                        destination_outlinks.append(outlink)
-            return destination_outlinks
+            # TODO: implement look up in the forwarding table.
+            # For now we simply return all output ports, which basically makes
+            # the switch behave as a hub.
+            return self.output_ports
 
         for message in message_list:
             destinations = message.destination
-            destination_outlinks = find_outlinks(destinations)
-            for link in destination_outlinks:
+            output_ports = find_output_ports(destinations)
+            for port in output_ports:
                 new_message = Message.from_message(message)
-                self.instruct_transmission(new_message, link)
+                self.env.process(
+                    self.instruct_transmission(new_message, port))
 
     def run(self):
         while True:
@@ -398,32 +454,6 @@ class Message:
             template_message.size_bytes,
             template_message.message_type)
         return new_equivalent_message
-
-    def transmit(self, link):
-        """
-        Transmit the message instance on the Link link.
-
-        """
-        log.debug("{} queued for transmission".format(self))
-        with link.resource.request() as transmission_request:
-            # request access to, and possibly queue for, the link
-            yield transmission_request
-            log.debug("{} transmission started".format(self))
-            link.message = self
-            # wait for the transmission + propagation time to elapse
-            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
-                                 Ethernet.SFD_SIZE_BYTES + self.size_bytes)
-            yield self.env.timeout(
-                link.transmission_time_us(bytes_to_transmit) +
-                link.propagation_delay_us)
-            # transmission finished, notify the link's receiver, but do not
-            # release the link yet
-            log.debug("{} transmission finished".format(self))
-            link.receiver.input_port.put(self)
-            # wait for the duration of the ethernet interframe gap to elapse
-            yield self.env.timeout(
-                link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
-            log.debug("{} inter frame gap finished".format(self))
 
     def __eq__(self, message):
         """

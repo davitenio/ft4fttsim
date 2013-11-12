@@ -25,33 +25,35 @@ def multiple_links(env, request):
     return [Link(env, 10, 0) for i in range(num_links)]
 
 
-def test_get_outlinks__connect_1_outlink__returns_new_outlink(device, link):
+def test_connect_1_outlink__link_has_correct_receiver_port(device, link):
     device.connect_outlink(link)
-    assert device.outlinks == [link]
+    assert device.output_ports == [link.transmitter_port]
 
 
-def test_connect_outlinks__returns_outlinks(device, multiple_links):
+def test_connect_outlinks(device, multiple_links):
     for link in multiple_links:
         device.connect_outlink(link)
-    assert device.outlinks == multiple_links
+    assert device.output_ports == [L.transmitter_port for L in multiple_links]
 
 
-def test_connect_outlink_list__returns_outlinks(device, multiple_links):
+def test_connect_outlink_list(device, multiple_links):
     device.connect_outlink_list(multiple_links)
-    assert device.outlinks == multiple_links
+    assert device.output_ports == [L.transmitter_port for L in multiple_links]
 
 
 def test_get_inlinks__connect_1_inlink__returns_new_inlink(device, link):
     device.connect_inlink(link)
-    assert device.inlinks == [link]
+    assert device.input_port == link.receiver_port
 
 
-def test_connect_inlinks__returns_inlinks(device, multiple_links):
+def test_connect_inlinks(device, multiple_links):
     for link in multiple_links:
         device.connect_inlink(link)
-    assert device.inlinks == multiple_links
+    assert all(
+        [L.receiver_port == device.input_port for L in multiple_links])
 
 
-def test_connect_inlink_list__returns_inlinks(device, multiple_links):
+def test_connect_inlink_list(device, multiple_links):
     device.connect_inlink_list(multiple_links)
-    assert device.inlinks == multiple_links
+    assert all(
+        [L.receiver_port == device.input_port for L in multiple_links])

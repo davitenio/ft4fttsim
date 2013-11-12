@@ -99,6 +99,7 @@ def test_interframe_gap(env, Mbps, num_bytes, expected_timestamp):
     link = Link(env, Mbps, 0)
     player = MessagePlaybackDevice(env, "player")
     player.connect_outlink(link)
+    port = player.output_ports[0]
     recorder = MessageRecordingDevice(env, "recorder")
     recorder.connect_inlink(link)
     messages = [Message(env, player, recorder, num_bytes, "message0"),
@@ -106,7 +107,7 @@ def test_interframe_gap(env, Mbps, num_bytes, expected_timestamp):
     transmission_start_time = 0
     player.load_transmission_commands(
         {
-            transmission_start_time: {link: messages}
+            transmission_start_time: {port: messages}
         }
     )
     env.run(until=float("inf"))

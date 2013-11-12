@@ -65,8 +65,8 @@ def player_diff(env, player, recorder1, recorder2):
     tx_start_time1, tx_start_time2 = range(2)
     messages1 = [Message(env, player, recorder1, 543, "message for recorder1")]
     messages2 = [Message(env, player, recorder2, 453, "message for recorder2")]
-    port1 = player.outlinks[0]
-    port2 = player.outlinks[1]
+    port1 = player.output_ports[0]
+    port2 = player.output_ports[1]
     player.load_transmission_commands(
         {
             0: {port1: messages1},
