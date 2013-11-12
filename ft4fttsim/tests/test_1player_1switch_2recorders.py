@@ -61,22 +61,22 @@ def player_rec1(request, env, recorder1, link0):
 
     """
     config = request.param
-    new_playback_device = make_playback_device(config, env, recorder1,
-        link0)
+    new_playback_device = make_playback_device(
+        config, env, recorder1, link0)
     return new_playback_device
 
 
 @pytest.fixture
 def player_rec1_switch_recorder1_recorder2(env, player_rec1, switch, recorder1,
-        recorder2, link0, link1, link2):
+                                           recorder2, link0, link1, link2):
     switch.connect_inlink(link0)
     switch.connect_outlink(link1)
     switch.connect_outlink(link2)
     return player_rec1, switch, recorder1, recorder2
 
 
-def test_messages_are_received_by_recorder1(env,
-        player_rec1_switch_recorder1_recorder2):
+def test_messages_are_received_by_recorder1(
+        env, player_rec1_switch_recorder1_recorder2):
     """
     Test that recorder1 receives messages.
 
@@ -88,8 +88,8 @@ def test_messages_are_received_by_recorder1(env,
     assert player.messages_to_transmit == received_messages
 
 
-def test_no_message_is_received_by_recorder2(env,
-        player_rec1_switch_recorder1_recorder2):
+def test_no_message_is_received_by_recorder2(
+        env, player_rec1_switch_recorder1_recorder2):
     """
     Test that recorder2 does not receive any message.
 
@@ -108,22 +108,22 @@ def player_rec2(request, env, recorder2, link0):
 
     """
     config = request.param
-    new_playback_device = make_playback_device(config, env, recorder2,
-        link0)
+    new_playback_device = make_playback_device(
+        config, env, recorder2, link0)
     return new_playback_device
 
 
 @pytest.fixture
-def player_rec2_switch_recorder1_recorder2(env, player_rec2, switch, recorder1,
-        recorder2, link0, link1, link2):
+def player_rec2_switch_recorder1_recorder2(
+        env, player_rec2, switch, recorder1, recorder2, link0, link1, link2):
     switch.connect_inlink(link0)
     switch.connect_outlink(link1)
     switch.connect_outlink(link2)
     return player_rec2, switch, recorder1, recorder2
 
 
-def test_messages_are_received_by_recorder2(env,
-        player_rec2_switch_recorder1_recorder2):
+def test_messages_are_received_by_recorder2(
+        env, player_rec2_switch_recorder1_recorder2):
     """
     Test that recorder2 receives messages.
 
@@ -135,8 +135,8 @@ def test_messages_are_received_by_recorder2(env,
     assert player.messages_to_transmit == received_messages
 
 
-def test_no_message_is_received_by_recorder1(env,
-        player_rec2_switch_recorder1_recorder2):
+def test_no_message_is_received_by_recorder1(
+        env, player_rec2_switch_recorder1_recorder2):
     """
     Test that recorder1 does not receive any message.
 
@@ -155,22 +155,22 @@ def player_rec12(request, env, recorder1, recorder2, link0):
 
     """
     config = request.param
-    new_playback_device = make_playback_device(config, env,
-        [recorder1, recorder2], link0)
+    new_playback_device = make_playback_device(
+        config, env, [recorder1, recorder2], link0)
     return new_playback_device
 
 
 @pytest.fixture
-def player_rec12_switch_recorder1_recorder2(env, player_rec12, switch,
-        recorder1, recorder2, link0, link1, link2):
+def player_rec12_switch_recorder1_recorder2(
+        env, player_rec12, switch, recorder1, recorder2, link0, link1, link2):
     switch.connect_inlink(link0)
     switch.connect_outlink(link1)
     switch.connect_outlink(link2)
     return player_rec12, switch, recorder1, recorder2
 
 
-def test_multicast_messages_are_received_by_recorder1(env,
-        player_rec12_switch_recorder1_recorder2):
+def test_multicast_messages_are_received_by_recorder1(
+        env, player_rec12_switch_recorder1_recorder2):
     """
     Test that recorder1 receives multicast messages.
 
@@ -182,8 +182,8 @@ def test_multicast_messages_are_received_by_recorder1(env,
     assert player.messages_to_transmit == received_messages
 
 
-def test_multicast_messages_are_received_by_recorder2(env,
-        player_rec12_switch_recorder1_recorder2):
+def test_multicast_messages_are_received_by_recorder2(
+        env, player_rec12_switch_recorder1_recorder2):
     """
     Test that recorder2 receives multicast messages.
 

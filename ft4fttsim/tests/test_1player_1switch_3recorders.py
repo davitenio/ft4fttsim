@@ -82,14 +82,15 @@ def player_rec13(request, env, recorder1, recorder3, link0):
 
     """
     config = request.param
-    new_playback_device = make_playback_device(config, env,
-        [recorder1, recorder3], link0)
+    new_playback_device = make_playback_device(
+        config, env, [recorder1, recorder3], link0)
     return new_playback_device
 
 
 @pytest.fixture
-def player_rec13_switch_recorder1_recorder2_recorder3(env, player_rec13,
-        switch, recorder1, recorder2, recorder3, link0, link1, link2, link3):
+def player_rec13_switch_recorder1_recorder2_recorder3(
+        env, player_rec13, switch, recorder1, recorder2, recorder3, link0,
+        link1, link2, link3):
     switch.connect_inlink(link0)
     switch.connect_outlink(link1)
     switch.connect_outlink(link2)
@@ -97,8 +98,8 @@ def player_rec13_switch_recorder1_recorder2_recorder3(env, player_rec13,
     return player_rec13, switch, recorder1, recorder2, recorder3
 
 
-def test_messages_are_received_by_recorder1(env,
-        player_rec13_switch_recorder1_recorder2_recorder3):
+def test_messages_are_received_by_recorder1(
+        env, player_rec13_switch_recorder1_recorder2_recorder3):
     """
     Test that recorder1 receives the messages.
     """
@@ -109,8 +110,8 @@ def test_messages_are_received_by_recorder1(env,
     assert player.messages_to_transmit == received_messages
 
 
-def test_messages_are_received_by_recorder3(env,
-        player_rec13_switch_recorder1_recorder2_recorder3):
+def test_messages_are_received_by_recorder3(
+        env, player_rec13_switch_recorder1_recorder2_recorder3):
     """
     Test that recorder3 receives the messages.
     """
@@ -121,8 +122,8 @@ def test_messages_are_received_by_recorder3(env,
     assert player.messages_to_transmit == received_messages
 
 
-def test_no_message_is_received_by_recorder2(env,
-        player_rec13_switch_recorder1_recorder2_recorder3):
+def test_no_message_is_received_by_recorder2(
+        env, player_rec13_switch_recorder1_recorder2_recorder3):
     """
     Test that recorder2 does not receive the message.
     """

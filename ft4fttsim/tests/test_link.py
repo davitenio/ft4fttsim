@@ -51,7 +51,7 @@ def test_link_created__receiver_is_None(env):
     [(1, 1526, 12208), (10, 1526, 1220.8), (100, 1526, 122.08),
     (1000, 1526, 12.208), (100, 0, 0)]
 )
-def test_link__transmission_time_us(env, Mbps, num_bytes,
-        expected_transmission_time):
+def test_link__transmission_time_us(
+        env, Mbps, num_bytes, expected_transmission_time):
     link = Link(env, Mbps, 0)
     assert link.transmission_time_us(num_bytes) == expected_transmission_time

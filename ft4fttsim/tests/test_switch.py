@@ -12,8 +12,11 @@ def test_forward_messages__no_outlinks__no_instruct_transmission(env, switch):
     instruct_transmission should not be called.
     """
     switch.instruct_transmission = Mock()
-    message_list = [Message(env, sentinel.source,
-        sentinel.destinations, Ethernet.MAX_FRAME_SIZE_BYTES,
-        sentinel.message_type) for i in range(10)]
+    message_list = [
+        Message(env, sentinel.source,
+                sentinel.destinations, Ethernet.MAX_FRAME_SIZE_BYTES,
+                sentinel.message_type)
+        for i in range(10)
+    ]
     switch.forward_messages(message_list)
     assert switch.instruct_transmission.called is False

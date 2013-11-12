@@ -42,14 +42,13 @@ def master(request, env, link1, recorder):
     # configured elementary cycle duration in microseconds
     EC_duration_us = 10 ** 9
     new_master = Master(env, "master", [recorder], EC_duration_us,
-        num_TMs_per_EC)
+                        num_TMs_per_EC)
     new_master.connect_outlink(link1)
     return new_master
 
 
 @pytest.fixture
-def master_switch_recorder(env, master, switch, recorder,
-        link1, link2):
+def master_switch_recorder(env, master, switch, recorder, link1, link2):
     switch.connect_inlink(link1)
     switch.connect_outlink(link2)
     return master, switch, recorder

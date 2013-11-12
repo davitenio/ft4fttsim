@@ -16,7 +16,8 @@ class SimLoggerAdapter(logging.LoggerAdapter):
         else:
             return "{}".format(log_msg), kwargs
 
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(
+    level=logging.DEBUG,
     format="%(levelname)5s:%(filename)s:%(lineno)4d: %(message)s")
 
 logger = logging.getLogger('ft4fttsim')

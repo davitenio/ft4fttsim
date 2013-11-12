@@ -61,7 +61,7 @@ class Link:
                 the link, i.e., the transmitter for this link.
 
         """
-        if self._transmitter != None:
+        if self._transmitter is not None:
             raise FT4FTTSimException("Link already has a transmitter.")
         self._transmitter = device
 
@@ -79,7 +79,7 @@ class Link:
                 the link, i.e., the receiver for this link.
 
         """
-        if self._receiver != None:
+        if self._receiver is not None:
             raise FT4FTTSimException("Link already has a receiver.")
         self._receiver = device
 
@@ -140,8 +140,8 @@ class NetworkDevice:
             self.connect_inlink(link)
 
     def instruct_transmission(self, message, outlink):
-        log.debug("{} instructing transmission of {} on {}".format(self,
-            message, outlink))
+        log.debug("{} instructing transmission of {} on {}".format(
+            self, message, outlink))
         if outlink not in self.outlinks:
             raise FT4FTTSimException("{} is not an outlink of {}".format(
                 outlink, self))
@@ -188,8 +188,8 @@ class MessageRecordingDevice(NetworkDevice):
             # sleep until a message is in the receive buffer
             msg = yield self.receive_buffer.get()
             received_messages = [msg]
-            log.debug("{} received {}".format(self,
-                received_messages))
+            log.debug("{} received {}".format(
+                self, received_messages))
             timestamp = self.env.now
             self.reception_records[timestamp] = received_messages
             log.debug("{} recorded {}".format(self, self.reception_records))
@@ -247,8 +247,8 @@ class MessagePlaybackDevice(NetworkDevice):
 
         """
         self.transmission_commands = transmission_commands
-        log.debug("{} loaded transmissions: {}".format(self,
-            self.transmission_commands))
+        log.debug("{} loaded transmissions: {}".format(
+            self, self.transmission_commands))
 
     def connect_inlink(self, link):
         raise NotImplementedError()
@@ -379,8 +379,8 @@ class Message:
         self.destination = destination
         self.size_bytes = size_bytes
         self.message_type = message_type
-        self.name = "({:03d}, {}, {}, {:d}, {})".format(self.ID,
-            self.source, self.destination, self.size_bytes,
+        self.name = "({:03d}, {}, {}, {:d}, {})".format(
+            self.ID, self.source, self.destination, self.size_bytes,
             self.message_type)
         log.debug("{} created".format(self))
 
@@ -411,7 +411,7 @@ class Message:
             link.message = self
             # wait for the transmission + propagation time to elapse
             bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
-                Ethernet.SFD_SIZE_BYTES + self.size_bytes)
+                                 Ethernet.SFD_SIZE_BYTES + self.size_bytes)
             yield self.env.timeout(
                 link.transmission_time_us(bytes_to_transmit) +
                 link.propagation_delay_us)
@@ -431,9 +431,9 @@ class Message:
 
         """
         return (self.source == message.source and
-            self.destination == message.destination and
-            self.size_bytes == message.size_bytes and
-            self.message_type == message.message_type)
+                self.destination == message.destination and
+                self.size_bytes == message.size_bytes and
+                self.message_type == message.message_type)
 
     def is_trigger_message(self):
         return self.message_type == "TM"

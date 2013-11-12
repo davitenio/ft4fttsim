@@ -46,7 +46,8 @@ def make_playback_device(config, env, msg_destination, link):
                 1: {link: message_lists[1]},
             }
         )
-        player.messages_to_transmit = [message for message_list in
+        player.messages_to_transmit = [
+            message for message_list in
             message_lists for message in message_list]
     elif config == "8 messages":
         message_lists = [
@@ -71,16 +72,29 @@ def make_playback_device(config, env, msg_destination, link):
                 11114: {link: message_lists[7]},
             }
         )
-        player.messages_to_transmit = [message for message_list in
+        player.messages_to_transmit = [
+            message for message_list in
             message_lists for message in message_list]
     elif config == "3 batches of 2 messages":
         message_lists = [
-            [Message(env, player, msg_destination, 142, "batch0 message0"),
-            Message(env, player, msg_destination, 1000, "batch0 message1")],
-            [Message(env, player, msg_destination, 218, "batch1 message0"),
-            Message(env, player, msg_destination, 1050, "batch1 message1")],
-            [Message(env, player, msg_destination, 1381, "batch2 message0"),
-            Message(env, player, msg_destination, 150, "batch2 message1")],
+            [
+                Message(env, player,
+                        msg_destination, 142, "batch0 message0"),
+                Message(env, player,
+                        msg_destination, 1000, "batch0 message1")
+            ],
+            [
+                Message(env, player,
+                        msg_destination, 218, "batch1 message0"),
+                Message(env, player,
+                        msg_destination, 1050, "batch1 message1")
+            ],
+            [
+                Message(env, player,
+                        msg_destination, 1381, "batch2 message0"),
+                Message(env, player,
+                        msg_destination, 150, "batch2 message1")
+            ],
         ]
         player.load_transmission_commands(
             {
@@ -89,7 +103,8 @@ def make_playback_device(config, env, msg_destination, link):
                 555: {link: message_lists[2]},
             }
         )
-        player.messages_to_transmit = [message for message_list in
+        player.messages_to_transmit = [
+            message for message_list in
             message_lists for message in message_list]
     return player
 

@@ -40,21 +40,21 @@ def recorder(env, link2):
 @pytest.fixture(params=PLAYBACK_CONFIGS)
 def player(request, env, recorder, link1):
     config = request.param
-    new_playback_device = make_playback_device(config, env, recorder,
-        link1)
+    new_playback_device = make_playback_device(
+        config, env, recorder, link1)
     return new_playback_device
 
 
 @pytest.fixture
-def player_switch_recorder(env, player, switch, recorder,
-        link1, link2):
+def player_switch_recorder(
+        env, player, switch, recorder, link1, link2):
     switch.connect_inlink(link1)
     switch.connect_outlink(link2)
     return player, switch, recorder
 
 
-def test_messages_played__equals_messages_recorded(env,
-        player_switch_recorder):
+def test_messages_played__equals_messages_recorded(
+        env, player_switch_recorder):
     """
     Test that the recorder receives the messages transmitted by player.
 

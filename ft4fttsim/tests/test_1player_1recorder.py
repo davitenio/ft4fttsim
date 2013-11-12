@@ -33,19 +33,19 @@ def recorder(env, link):
 @pytest.fixture(params=PLAYBACK_CONFIGS)
 def player(request, env, recorder, link):
     config = request.param
-    new_playback_device = make_playback_device(config, env, recorder,
-        link)
+    new_playback_device = make_playback_device(
+        config, env, recorder, link)
     return new_playback_device
 
 
-def test_messages_played__equals_messages_recorded(env,
-        player, recorder):
+def test_messages_played__equals_messages_recorded(
+        env, player, recorder):
     """
     Test that the recorder receives the messages transmitted by player.
     """
     env.run(until=float("inf"))
     assert (player.messages_to_transmit ==
-        recorder.recorded_messages)
+            recorder.recorded_messages)
 
 
 BITS_PER_BYTE = 8
@@ -58,8 +58,9 @@ def test_first_message_played__arrives_when_expected(
     recorder when expected.
     """
     def transmission_delay(message, link):
-        bytes_transmitted = (Ethernet.PREAMBLE_SIZE_BYTES +
-            Ethernet.SFD_SIZE_BYTES + message.size_bytes)
+        bytes_transmitted = (
+            Ethernet.PREAMBLE_SIZE_BYTES + Ethernet.SFD_SIZE_BYTES +
+            message.size_bytes)
         bits_transmitted = bytes_transmitted * BITS_PER_BYTE
         # transmission delay in microseconds
         delay_in_us = bits_transmitted / float(link.megabits_per_second)
@@ -69,9 +70,9 @@ def test_first_message_played__arrives_when_expected(
     # time it should take the first message to arrive at recorder in
     # microseconds
     time_to_destination_in_us = (transmission_delay(message, link) +
-        link.propagation_delay_us)
+                                 link.propagation_delay_us)
     expected_timestamp = (player.transmission_start_times[0] +
-            time_to_destination_in_us)
+                          time_to_destination_in_us)
     assert recorder.recorded_timestamps[0] == expected_timestamp
 
 
