@@ -22,6 +22,8 @@ class OutputPort(simpy.Store):
     def __init__(self, env, device):
         simpy.Store.__init__(self, env, capacity=1)
         self.device = device
+        # indicates whether the port is already connected to a link
+        self.is_free = True
 
     def __repr__(self):
         return "{}-outport0x{}".format(
@@ -43,11 +45,18 @@ class Link:
     additional messages is ordered through the link, then they will be queued.
 
     """
-    def __init__(self, env, megabits_per_second, propagation_delay_us):
+    def __init__(
+            self, env,
+            transmitter_port, receiver_port,
+            megabits_per_second, propagation_delay_us):
         """
         Create a new instance of class Link.
 
         Arguments:
+            transmitter: An instance of NetworkDevice that will be attached to
+                the link instance as the transmitter.
+            receiver: An instance of NetworkDevice that will be attached to
+                the link instance as the receiver.
             megabits_per_second: Speed of the link in megabits per second.
             propagation_delay_us: Propagation delay of the link in
                 microseconds.
@@ -61,10 +70,13 @@ class Link:
             raise FT4FTTSimException("Mbps must be a positive number.")
         if propagation_delay_us < 0:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
+        assert isinstance(transmitter_port, OutputPort)
+        assert isinstance(receiver_port, InputPort)
+        assert transmitter_port.is_free
         self.env = env
-        self.resource = simpy.Resource(self.env, capacity=1)
-        self._transmitter_port = None
-        self._receiver_port = None
+        self._transmitter_port = transmitter_port
+        transmitter_port.is_free = False
+        self._receiver_port = receiver_port
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
         env.process(self.run())
@@ -118,7 +130,9 @@ class Link:
         transmission time of 1526 * 8 / 10**8 = 122.08 microseconds:
 
         >>> env = simpy.Environment()
-        >>> link = Link(env, 100, 0)
+        >>> d = NetworkDevice(env, "some device")
+        >>> d2 = NetworkDevice(env, "another device")
+        >>> link = Link(env, d.output_ports[0], d2.input_port, 100, 0)
         >>> link.transmission_time_us(1526)
         122.08
 
@@ -159,31 +173,16 @@ class Link:
 
 class NetworkDevice:
 
-    def __init__(self, env, name):
+    def __init__(self, env, name, num_output_ports=1):
         self.env = env
         # Single input port shared by all incoming links. In a physical system
         # there would be a port for each individual incoming link. For our
         # modeling purposes, however, a single port for all incoming links is
         # enough.
         self.input_port = InputPort(env, self)
-        self.output_ports = []
+        self.output_ports = [OutputPort(self.env, self)
+                             for port_count in range(num_output_ports)]
         self.name = name
-
-    def connect_outlink(self, link):
-        new_output_port = OutputPort(self.env, self)
-        self.output_ports.append(new_output_port)
-        link.transmitter_port = new_output_port
-
-    def connect_inlink(self, link):
-        link.receiver_port = self.input_port
-
-    def connect_outlink_list(self, link_list):
-        for link in link_list:
-            self.connect_outlink(link)
-
-    def connect_inlink_list(self, link_list):
-        for link in link_list:
-            self.connect_inlink(link)
 
     def instruct_transmission(self, message, output_port):
         """
@@ -195,9 +194,9 @@ class NetworkDevice:
 
         >>> env = simpy.Environment()
         >>> d = NetworkDevice(env, "some device")
-        >>> m = Message(env, d, d, 1234, "some message")
-        >>> L = Link(env, 100, 3)
-        >>> d.connect_outlink(L)
+        >>> d2 = NetworkDevice(env, "another device")
+        >>> L = Link(env, d.output_ports[0], d2.input_port, 100, 3)
+        >>> m = Message(env, d, d2, 1234, "some message")
         >>> env.process(d.instruct_transmission(m, d.output_ports[0]))
         <Process(instruct_transmission) object at 0x...>
 
@@ -281,8 +280,8 @@ class MessagePlaybackDevice(NetworkDevice):
 
     """
 
-    def __init__(self, env, name):
-        NetworkDevice.__init__(self, env, name)
+    def __init__(self, env, name, num_output_ports=1):
+        NetworkDevice.__init__(self, env, name, num_output_ports)
         env.process(self.run())
         self.transmission_commands = {}
 
@@ -341,8 +340,8 @@ class Switch(NetworkDevice):
 
     """
 
-    def __init__(self, env, name):
-        NetworkDevice.__init__(self, env, name)
+    def __init__(self, env, name, num_output_ports=1):
+        NetworkDevice.__init__(self, env, name, num_output_ports)
         env.process(self.run())
 
     def forward_messages(self, message_list):

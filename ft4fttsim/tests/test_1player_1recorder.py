@@ -17,27 +17,28 @@ from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link(env, request):
-    new_link = make_link(request.param, env)
+def link(env, request, player, recorder):
+    new_link = make_link(request.param, env, player.output_ports[0],
+                         recorder.input_port)
     return new_link
 
 
 @pytest.fixture
-def recorder(env, link):
+def recorder(env):
     from ft4fttsim.networking import MessageRecordingDevice
     recorder = MessageRecordingDevice(env, "recorder")
-    recorder.connect_inlink(link)
     return recorder
 
 
 @pytest.fixture(params=PLAYBACK_CONFIGS)
-def player(request, env, recorder, link):
+def player(request, env, recorder):
     config = request.param
     new_playback_device = make_playback_device(
-        config, env, recorder, link)
+        config, env, recorder)
     return new_playback_device
 
 
+@pytest.mark.usefixtures("link")
 def test_messages_played__equals_messages_recorded(
         env, player, recorder):
     """
@@ -96,12 +97,10 @@ def test_interframe_gap(env, Mbps, num_bytes, expected_timestamp):
     to the transmission time of the first message.
 
     """
-    link = Link(env, Mbps, 0)
     player = MessagePlaybackDevice(env, "player")
-    player.connect_outlink(link)
     port = player.output_ports[0]
     recorder = MessageRecordingDevice(env, "recorder")
-    recorder.connect_inlink(link)
+    link = Link(env, port, recorder.input_port, Mbps, 0)
     messages = [Message(env, player, recorder, num_bytes, "message0"),
                 Message(env, player, recorder, num_bytes, "message1")]
     transmission_start_time = 0

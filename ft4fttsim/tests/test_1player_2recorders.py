@@ -16,42 +16,24 @@ import pytest
 from ft4fttsim.tests.fixturehelper import make_link
 
 
-@pytest.fixture(params=[(1000, 13)])
-def link1(env, request):
-    config = request.param
-    new_link = make_link(config, env)
-    return new_link
-
-
-@pytest.fixture(params=[(1000, 13)])
-def link2(env, request):
-    config = request.param
-    new_link = make_link(config, env)
-    return new_link
-
-
 @pytest.fixture
-def recorder1(env, link1):
+def recorder1(env):
     from ft4fttsim.networking import MessageRecordingDevice
     recorder = MessageRecordingDevice(env, "recorder1")
-    recorder.connect_inlink(link1)
     return recorder
 
 
 @pytest.fixture
-def recorder2(env, link2):
+def recorder2(env):
     from ft4fttsim.networking import MessageRecordingDevice
     recorder = MessageRecordingDevice(env, "recorder2")
-    recorder.connect_inlink(link2)
     return recorder
 
 
 @pytest.fixture
-def player(env, link1, link2):
+def player(env):
     from ft4fttsim.networking import MessagePlaybackDevice
-    player = MessagePlaybackDevice(env, "player")
-    player.connect_outlink(link1)
-    player.connect_outlink(link2)
+    player = MessagePlaybackDevice(env, "player", num_output_ports=2)
     return player
 
 
@@ -65,12 +47,12 @@ def player_diff(env, player, recorder1, recorder2):
     tx_start_time1, tx_start_time2 = range(2)
     messages1 = [Message(env, player, recorder1, 543, "message for recorder1")]
     messages2 = [Message(env, player, recorder2, 453, "message for recorder2")]
-    port1 = player.output_ports[0]
-    port2 = player.output_ports[1]
+    port0 = player.output_ports[0]
+    port1 = player.output_ports[1]
     player.load_transmission_commands(
         {
-            0: {port1: messages1},
-            1: {port2: messages2},
+            0: {port0: messages1},
+            1: {port1: messages2},
         }
     )
     player.messages1 = messages1
@@ -78,21 +60,41 @@ def player_diff(env, player, recorder1, recorder2):
     return player
 
 
+@pytest.fixture(params=[(1000, 13)])
+def link1(env, request, player_diff, recorder1):
+    config = request.param
+    new_link = make_link(
+        config, env, player_diff.output_ports[0], recorder1.input_port)
+    return new_link
+
+
+@pytest.fixture(params=[(1000, 13)])
+def link2(env, request, player_diff, recorder2):
+    config = request.param
+    new_link = make_link(
+        config, env, player_diff.output_ports[1], recorder2.input_port)
+    return new_link
+
+
+@pytest.mark.usefixtures("link1", "link2")
 def test_recorder1_gets_correct_message(env, player_diff, recorder1):
     env.run(until=float("inf"))
     assert player_diff.messages1 == recorder1.recorded_messages
 
 
+@pytest.mark.usefixtures("link1", "link2")
 def test_recorder2_gets_correct_message(env, player_diff, recorder2):
     env.run(until=float("inf"))
     assert player_diff.messages2 == recorder2.recorded_messages
 
 
+@pytest.mark.usefixtures("link1", "link2")
 def test_recorder1_does_not_get_wrong_message(env, player_diff, recorder1):
     env.run(until=float("inf"))
     assert player_diff.messages2 != recorder1.recorded_messages
 
 
+@pytest.mark.usefixtures("link1", "link2")
 def test_recorder2_does_not_get_wrong_message(env, player_diff, recorder2):
     env.run(until=float("inf"))
     assert player_diff.messages1 != recorder2.recorded_messages

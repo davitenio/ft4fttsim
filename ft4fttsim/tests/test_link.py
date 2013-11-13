@@ -1,8 +1,16 @@
 # author: David Gessner <davidges@gmail.com>
 
 import pytest
-from ft4fttsim.networking import Link
+from unittest.mock import Mock
+from ft4fttsim.networking import Link, OutputPort, InputPort
 from ft4fttsim.exceptions import FT4FTTSimException
+
+
+@pytest.fixture
+def stub_output_port():
+    stub_output_port = Mock(spec=OutputPort)
+    stub_output_port.is_free = True
+    return stub_output_port
 
 
 @pytest.mark.parametrize("Mbps,propagation_delay", [
@@ -16,9 +24,11 @@ from ft4fttsim.exceptions import FT4FTTSimException
     # exception
     (-5, -5),
 ])
-def test_link_constructor_raises_exception(env, Mbps, propagation_delay):
+def test_link_constructor_raises_exception(
+        env, stub_output_port, Mbps, propagation_delay):
     with pytest.raises(FT4FTTSimException):
-        Link(env, Mbps, propagation_delay)
+        Link(env, stub_output_port, Mock(spec=InputPort),
+             Mbps, propagation_delay)
 
 
 @pytest.mark.parametrize("Mbps,propagation_delay", [
@@ -34,16 +44,12 @@ def test_link_constructor_raises_exception(env, Mbps, propagation_delay):
     (100000, 0.00001),
 ])
 def test_link_constructor_does_not_raise_exception(
-        env, Mbps, propagation_delay):
+        env, stub_output_port, Mbps, propagation_delay):
     try:
-        Link(env, Mbps, propagation_delay)
+        Link(env, stub_output_port, Mock(spec=InputPort),
+             Mbps, propagation_delay)
     except:
         assert False, "Link constructor should not raise exception."
-
-
-def test_link_created__receiver_port_is_None(env):
-    link = Link(env, 10, 0)
-    assert link.receiver_port is None
 
 
 @pytest.mark.parametrize(
@@ -52,6 +58,7 @@ def test_link_created__receiver_port_is_None(env):
     (1000, 1526, 12.208), (100, 0, 0)]
 )
 def test_link__transmission_time_us(
-        env, Mbps, num_bytes, expected_transmission_time):
-    link = Link(env, Mbps, 0)
+        env, stub_output_port, Mbps, num_bytes, expected_transmission_time):
+    link = Link(env, stub_output_port, Mock(spec=InputPort),
+                Mbps, 0)
     assert link.transmission_time_us(num_bytes) == expected_transmission_time

@@ -9,7 +9,7 @@ PLAYBACK_CONFIGS = [
 ]
 
 
-def make_playback_device(config, env, msg_destination, link, name="player"):
+def make_playback_device(config, env, msg_destination, name="player"):
     """
     Return a new instance of MessagePlaybackDevice configured according to the
     arguments.
@@ -26,7 +26,6 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
     """
     from ft4fttsim.networking import MessagePlaybackDevice, Message
     player = MessagePlaybackDevice(env, name)
-    player.connect_outlink(link)
     output_port = player.output_ports[0]
     if config == "single message":
         messages = [Message(env, player, msg_destination, 1518, "message")]
@@ -114,7 +113,8 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
 LINK_CONFIGS = [(10, 3), (100, 0), (1000, 9)]
 
 
-def make_link(config, env):
+def make_link(config, env, device1, device2):
     from ft4fttsim.networking import Link
     Mbps, delay = config
-    return Link(env, megabits_per_second=Mbps, propagation_delay_us=delay)
+    return Link(env, device1, device2, megabits_per_second=Mbps,
+                propagation_delay_us=delay)
