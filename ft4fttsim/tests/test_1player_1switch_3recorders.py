@@ -59,7 +59,7 @@ def player_rec13(request, env, recorder1, recorder3):
 @pytest.fixture
 def switch3(env):
     from ft4fttsim.networking import Switch
-    return Switch(env, "switch3", num_output_ports=3)
+    return Switch(env, "switch3", num_ports=3)
 
 
 @pytest.fixture(params=[(100, 0)])

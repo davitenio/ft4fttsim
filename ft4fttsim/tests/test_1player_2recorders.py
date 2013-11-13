@@ -33,7 +33,7 @@ def recorder2(env):
 @pytest.fixture
 def player(env):
     from ft4fttsim.networking import MessagePlaybackDevice
-    player = MessagePlaybackDevice(env, "player", num_output_ports=2)
+    player = MessagePlaybackDevice(env, "player", num_ports=2)
     return player
 
 

@@ -14,7 +14,7 @@ def test_link_has_correct_transmitter_port(env):
 @pytest.fixture(params=list(range(3)) + [20])
 def test_links_have_correct_transmitter_ports(env):
     num_links = request.param
-    device = NetworkDevice(env, "test device", num_output_ports=num_links)
+    device = NetworkDevice(env, "test device", num_ports=num_links)
     multiple_links = []
     for i in range(num_links):
         multiple_links.append(

@@ -173,7 +173,7 @@ class Link:
 
 class NetworkDevice:
 
-    def __init__(self, env, name, num_output_ports=1):
+    def __init__(self, env, name, num_ports=1):
         self.env = env
         # Single input port shared by all incoming links. In a physical system
         # there would be a port for each individual incoming link. For our
@@ -181,7 +181,7 @@ class NetworkDevice:
         # enough.
         self.input_port = InputPort(env, self)
         self.output_ports = [OutputPort(self.env, self)
-                             for port_count in range(num_output_ports)]
+                             for port_count in range(num_ports)]
         self.name = name
 
     def instruct_transmission(self, message, output_port):
@@ -280,8 +280,8 @@ class MessagePlaybackDevice(NetworkDevice):
 
     """
 
-    def __init__(self, env, name, num_output_ports=1):
-        NetworkDevice.__init__(self, env, name, num_output_ports)
+    def __init__(self, env, name, num_ports=1):
+        NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.run())
         self.transmission_commands = {}
 
@@ -340,8 +340,8 @@ class Switch(NetworkDevice):
 
     """
 
-    def __init__(self, env, name, num_output_ports=1):
-        NetworkDevice.__init__(self, env, name, num_output_ports)
+    def __init__(self, env, name, num_ports=1):
+        NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.run())
 
     def forward_messages(self, message_list):
