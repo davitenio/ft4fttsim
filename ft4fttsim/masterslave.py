@@ -13,7 +13,8 @@ class Master(NetworkDevice):
     """
 
     def __init__(
-            self, env, name, slaves, elementary_cycle_us, num_TMs_per_EC=1):
+            self, env, name, num_ports, slaves, elementary_cycle_us,
+            num_TMs_per_EC=1):
         """
         Constructor for FTT masters.
 
@@ -26,7 +27,7 @@ class Master(NetworkDevice):
 
         """
         assert isinstance(num_TMs_per_EC, int)
-        NetworkDevice.__init__(self, env, name)
+        NetworkDevice.__init__(self, env, name, num_ports)
         self.proc = env.process(self.run())
         self.slaves = slaves
         self.EC_duration_us = elementary_cycle_us
@@ -36,7 +37,7 @@ class Master(NetworkDevice):
 
     def broadcast_trigger_message(self):
         log.debug("{} broadcasting trigger message".format(self))
-        for port in self.output_ports:
+        for port in self.ports:
             trigger_message = Message(self.env, self, self.slaves,
                                       Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
             log.debug(

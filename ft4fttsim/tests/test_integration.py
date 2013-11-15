@@ -5,40 +5,43 @@ from unittest.mock import sentinel, Mock
 from ft4fttsim.networking import *
 
 
-def test_link_has_correct_transmitter_port(env):
-    device = NetworkDevice(env, "test device")
-    link = Link(env, device.output_ports[0], Mock(spec_set=InputPort), 1, 1)
-    assert device.output_ports == [link.transmitter_port]
+@pytest.fixture
+def port():
+    stub_port = Mock(spec=Port)
+    stub_port.is_free = True
+    return stub_port
+
+
+def test_link_has_correct_transmitter_port(env, port):
+    device = NetworkDevice(env, "test device", 1)
+    link = Link(env, device.ports[0], port, 1, 1)
+    assert device.ports == [link.transmitter_port]
 
 
 @pytest.fixture(params=list(range(3)) + [20])
-def test_links_have_correct_transmitter_ports(env):
+def test_links_have_correct_transmitter_ports(env, port):
     num_links = request.param
     device = NetworkDevice(env, "test device", num_ports=num_links)
     multiple_links = []
     for i in range(num_links):
         multiple_links.append(
-            Link(env, device.output_ports[i],
-                 Mock(spec_set=InputPort), 100, 0))
-    assert device.output_ports == [L.transmitter_port for L in multiple_links]
+            Link(env, device.ports[i], port, 100, 0))
+    assert device.ports == [L.transmitter_port for L in multiple_links]
 
 
-def test_link_has_correct_receiver_port(env):
-    device = NetworkDevice(env, "test device")
-    stub_output_port = Mock(spec=OutputPort)
-    stub_output_port.is_free = True
-    link = Link(env, stub_output_port, device.input_port, 1, 1)
-    assert device.input_port == link.receiver_port
+def test_link_has_correct_receiver_port(env, port):
+    device = NetworkDevice(env, "test device", 1)
+    link = Link(env, port, device.ports[0], 1, 1)
+    assert device.ports[0] == link.receiver_port
 
 
 @pytest.fixture(params=list(range(3)) + [20])
-def test_links_have_correct_receiver_ports(env):
+def test_links_have_correct_receiver_ports(env, port):
     num_links = request.param
-    device = NetworkDevice(env, "test device")
+    device = NetworkDevice(env, "test device", 1)
     multiple_links = []
     for i in range(num_links):
         multiple_links.append(
-            Link(env, Mock(spec_set=OutputPort),
-                 device.input_port, 100, 0))
+            Link(env, port, device.ports[0], 100, 0))
     assert all(
-        [L.receiver_port == device.input_port for L in multiple_links])
+        [L.receiver_port == device.ports[0] for L in multiple_links])

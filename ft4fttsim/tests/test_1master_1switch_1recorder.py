@@ -2,9 +2,9 @@
 """
 Perform tests under the following network:
 
-+--------+ link1 +--------+ link2 +----------+
-| master | ----> | switch | ----> | recorder |
-+--------+       +--------+       +----------+
++--------+ link1 +---------+ link2 +----------+
+| master | ----> | switch2 | ----> | recorder |
++--------+       +---------+       +----------+
 """
 
 import pytest
@@ -13,25 +13,25 @@ from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link1(env, request, master, switch):
+def link1(env, request, master, switch2):
     config = request.param
-    new_link = make_link(config, env, master.output_ports[0],
-                         switch.input_port)
+    new_link = make_link(config, env, master.ports[0],
+                         switch2.ports[0])
     return new_link
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link2(env, request, switch, recorder):
+def link2(env, request, switch2, recorder):
     config = request.param
-    new_link = make_link(config, env, switch.output_ports[0],
-                         recorder.input_port)
+    new_link = make_link(config, env, switch2.ports[1],
+                         recorder.ports[0])
     return new_link
 
 
 @pytest.fixture
 def recorder(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder")
+    recorder = MessageRecordingDevice(env, "recorder", 1)
     return recorder
 
 
@@ -42,7 +42,7 @@ def master(request, env, recorder):
     num_TMs_per_EC = request.param
     # configured elementary cycle duration in microseconds
     EC_duration_us = 10 ** 9
-    new_master = Master(env, "master", [recorder], EC_duration_us,
+    new_master = Master(env, "master", 1, [recorder], EC_duration_us,
                         num_TMs_per_EC)
     return new_master
 

@@ -2,15 +2,22 @@
 
 import pytest
 from unittest.mock import Mock
-from ft4fttsim.networking import Link, OutputPort, InputPort
+from ft4fttsim.networking import Link, Port
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
 @pytest.fixture
-def stub_output_port():
-    stub_output_port = Mock(spec=OutputPort)
-    stub_output_port.is_free = True
-    return stub_output_port
+def port1():
+    stub_port = Mock(spec=Port)
+    stub_port.is_free = True
+    return stub_port
+
+
+@pytest.fixture
+def port2():
+    stub_port = Mock(spec=Port)
+    stub_port.is_free = True
+    return stub_port
 
 
 @pytest.mark.parametrize("Mbps,propagation_delay", [
@@ -25,10 +32,9 @@ def stub_output_port():
     (-5, -5),
 ])
 def test_link_constructor_raises_exception(
-        env, stub_output_port, Mbps, propagation_delay):
+        env, port1, port2, Mbps, propagation_delay):
     with pytest.raises(FT4FTTSimException):
-        Link(env, stub_output_port, Mock(spec=InputPort),
-             Mbps, propagation_delay)
+        Link(env, port1, port2, Mbps, propagation_delay)
 
 
 @pytest.mark.parametrize("Mbps,propagation_delay", [
@@ -44,12 +50,9 @@ def test_link_constructor_raises_exception(
     (100000, 0.00001),
 ])
 def test_link_constructor_does_not_raise_exception(
-        env, stub_output_port, Mbps, propagation_delay):
-    try:
-        Link(env, stub_output_port, Mock(spec=InputPort),
-             Mbps, propagation_delay)
-    except:
-        assert False, "Link constructor should not raise exception."
+        env, port1, port2, Mbps, propagation_delay):
+    # Constructing the link should pass and not raise any exception or error
+    Link(env, port1, port2, Mbps, propagation_delay)
 
 
 @pytest.mark.parametrize(
@@ -58,7 +61,6 @@ def test_link_constructor_does_not_raise_exception(
     (1000, 1526, 12.208), (100, 0, 0)]
 )
 def test_link__transmission_time_us(
-        env, stub_output_port, Mbps, num_bytes, expected_transmission_time):
-    link = Link(env, stub_output_port, Mock(spec=InputPort),
-                Mbps, 0)
+        env, port1, port2, Mbps, num_bytes, expected_transmission_time):
+    link = Link(env, port1, port2, Mbps, 0)
     assert link.transmission_time_us(num_bytes) == expected_transmission_time

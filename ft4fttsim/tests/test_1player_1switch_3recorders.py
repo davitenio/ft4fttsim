@@ -26,21 +26,21 @@ from ft4fttsim.tests.fixturehelper import make_link
 @pytest.fixture
 def recorder1(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder1")
+    recorder = MessageRecordingDevice(env, "recorder1", 1)
     return recorder
 
 
 @pytest.fixture
 def recorder2(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder2")
+    recorder = MessageRecordingDevice(env, "recorder2", 1)
     return recorder
 
 
 @pytest.fixture
 def recorder3(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder3")
+    recorder = MessageRecordingDevice(env, "recorder3", 1)
     return recorder
 
 
@@ -56,41 +56,35 @@ def player_rec13(request, env, recorder1, recorder3):
     return new_playback_device
 
 
-@pytest.fixture
-def switch3(env):
-    from ft4fttsim.networking import Switch
-    return Switch(env, "switch3", num_ports=3)
-
-
 @pytest.fixture(params=[(100, 0)])
-def link0(env, request, player_rec13, switch3):
+def link0(env, request, player_rec13, switch4):
     config = request.param
     new_link = make_link(
-        config, env, player_rec13.output_ports[0], switch3.input_port)
+        config, env, player_rec13.ports[0], switch4.ports[0])
     return new_link
 
 
 @pytest.fixture(params=[(100, 0)])
-def link1(env, request, switch3, recorder1):
+def link1(env, request, switch4, recorder1):
     config = request.param
     new_link = make_link(
-        config, env, switch3.output_ports[0], recorder1.input_port)
+        config, env, switch4.ports[1], recorder1.ports[0])
     return new_link
 
 
 @pytest.fixture(params=[(100, 0)])
-def link2(env, request, switch3, recorder2):
+def link2(env, request, switch4, recorder2):
     config = request.param
     new_link = make_link(
-        config, env, switch3.output_ports[1], recorder2.input_port)
+        config, env, switch4.ports[2], recorder2.ports[0])
     return new_link
 
 
 @pytest.fixture(params=[(100, 0)])
-def link3(env, request, switch3, recorder3):
+def link3(env, request, switch4, recorder3):
     config = request.param
     new_link = make_link(
-        config, env, switch3.output_ports[2], recorder3.input_port)
+        config, env, switch4.ports[3], recorder3.ports[0])
     return new_link
 
 

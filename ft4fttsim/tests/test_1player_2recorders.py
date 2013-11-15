@@ -19,14 +19,14 @@ from ft4fttsim.tests.fixturehelper import make_link
 @pytest.fixture
 def recorder1(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder1")
+    recorder = MessageRecordingDevice(env, "recorder1", 1)
     return recorder
 
 
 @pytest.fixture
 def recorder2(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder2")
+    recorder = MessageRecordingDevice(env, "recorder2", 1)
     return recorder
 
 
@@ -47,8 +47,8 @@ def player_diff(env, player, recorder1, recorder2):
     tx_start_time1, tx_start_time2 = range(2)
     messages1 = [Message(env, player, recorder1, 543, "message for recorder1")]
     messages2 = [Message(env, player, recorder2, 453, "message for recorder2")]
-    port0 = player.output_ports[0]
-    port1 = player.output_ports[1]
+    port0 = player.ports[0]
+    port1 = player.ports[1]
     player.load_transmission_commands(
         {
             0: {port0: messages1},
@@ -64,7 +64,7 @@ def player_diff(env, player, recorder1, recorder2):
 def link1(env, request, player_diff, recorder1):
     config = request.param
     new_link = make_link(
-        config, env, player_diff.output_ports[0], recorder1.input_port)
+        config, env, player_diff.ports[0], recorder1.ports[0])
     return new_link
 
 
@@ -72,7 +72,7 @@ def link1(env, request, player_diff, recorder1):
 def link2(env, request, player_diff, recorder2):
     config = request.param
     new_link = make_link(
-        config, env, player_diff.output_ports[1], recorder2.input_port)
+        config, env, player_diff.ports[1], recorder2.ports[0])
     return new_link
 
 

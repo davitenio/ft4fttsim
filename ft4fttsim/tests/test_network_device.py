@@ -6,7 +6,7 @@ import pytest
 @pytest.fixture
 def new_device(env):
     from ft4fttsim.networking import NetworkDevice
-    return NetworkDevice(env, "new device")
+    return NetworkDevice(env, "new device", 1)
 
 
 def test_instruct_transmission_through_non_existing_port__raise_exception(

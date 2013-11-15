@@ -2,9 +2,9 @@
 """
 Execute tests under the following network:
 
-+--------+ link1 +--------+ link2 +----------+
-| player | ----> | switch | --->  | recorder |
-+--------+       +--------+       +----------+
++--------+ link1 +---------+ link2 +----------+
+| player | ----> | switch2 | ----> | recorder |
++--------+       +---------+       +----------+
 """
 
 
@@ -16,25 +16,25 @@ from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link1(env, request, player, switch):
+def link1(env, request, player, switch2):
     config = request.param
     new_link = make_link(
-        config, env, player.output_ports[0], switch.input_port)
+        config, env, player.ports[0], switch2.ports[0])
     return new_link
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link2(env, request, switch, recorder):
+def link2(env, request, switch2, recorder):
     config = request.param
     new_link = make_link(
-        config, env, switch.output_ports[0], recorder.input_port)
+        config, env, switch2.ports[1], recorder.ports[0])
     return new_link
 
 
 @pytest.fixture
 def recorder(env):
     from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder")
+    recorder = MessageRecordingDevice(env, "recorder", 1)
     return recorder
 
 
