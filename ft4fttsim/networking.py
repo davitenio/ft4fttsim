@@ -83,8 +83,8 @@ class Link:
         assert port1.is_free
         assert port2.is_free
         self.sublink = (
-            Sublink(env, self, port1, port2),
-            Sublink(env, self, port2, port1)
+            _Sublink(env, self, port1, port2),
+            _Sublink(env, self, port2, port1)
         )
         port1.is_free = False
         port2.is_free = False
@@ -116,7 +116,7 @@ class Link:
         return transmission_time_us
 
 
-class Sublink:
+class _Sublink:
     """
     Sublinks are directional, i.e., they have a single transmitter and a single
     receiver port. Messages that are being modeled as being transmitted can
@@ -130,7 +130,7 @@ class Sublink:
             self, env, link,
             transmitter_port, receiver_port):
         """
-        Create a new instance of class Sublink.
+        Create a new instance of class _Sublink.
 
         Arguments:
             link: the link that the sublink instance is a part of.
