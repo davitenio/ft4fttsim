@@ -8,6 +8,12 @@ import collections
 
 
 class Port:
+    """
+    Instances of this class model physical Ethernet ports. Instances of the
+    class NetworkDevice can have several such ports, and to each one of them an
+    instance of Link can be attached.
+
+    """
 
     class InputQueue(simpy.Store):
 
