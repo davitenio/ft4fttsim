@@ -64,3 +64,11 @@ def test_link__transmission_time_us(
         env, port1, port2, Mbps, num_bytes, expected_transmission_time):
     link = Link(env, port1, port2, Mbps, 0)
     assert link.transmission_time_us(num_bytes) == expected_transmission_time
+
+
+def test_sublink_have_correct_ports(env, port1, port2):
+    link = Link(env, port1, port2, 100, 0)
+    assert (
+        link.sublink[0].transmitter_port == link.sublink[1].receiver_port
+        and
+        link.sublink[1].transmitter_port == link.sublink[0].receiver_port)

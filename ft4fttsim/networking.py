@@ -44,26 +44,21 @@ class Link:
     A Link object models a physical link between at most 2 network devices
     (objects of class NetworkDevice). A Link object has a certain transmission
     speed (expressed in megabits per second) and propagation delay (expressed
-    in microseconds). Links are directional, i.e., they have a single
-    transmitter and a single receiver, and messages that are being modeled as
-    being transmitted can only be transmitted from the transmitter to the
-    receiver, but not in the opposite direction. At any one time at most one
-    message can be transmitted through a link. If the transmission of
-    additional messages is ordered through the link, then they will be queued.
+    in microseconds).
 
     """
     def __init__(
             self, env,
-            transmitter_port, receiver_port,
+            port1, port2,
             megabits_per_second, propagation_delay_us):
         """
         Create a new instance of class Link.
 
         Arguments:
-            transmitter: An instance of NetworkDevice that will be attached to
-                the link instance as the transmitter.
-            receiver: An instance of NetworkDevice that will be attached to
-                the link instance as the receiver.
+            port1: An instance of Port that will be attached to the link
+                instance.
+            port2: An instance of Port that will be attached to the link
+                instance.
             megabits_per_second: Speed of the link in megabits per second.
             propagation_delay_us: Propagation delay of the link in
                 microseconds.
@@ -77,61 +72,24 @@ class Link:
             raise FT4FTTSimException("Mbps must be a positive number.")
         if propagation_delay_us < 0:
             raise FT4FTTSimException("Propagation delay cannot be negative.")
-        if not isinstance(transmitter_port, Port):
+        if not isinstance(port1, Port):
             raise FT4FTTSimException(
-                "transmitter_port argument must be a port and not {}.".format(
-                    type(transmitter_port)))
-        if not isinstance(receiver_port, Port):
+                "port1 argument must be a port and not {}.".format(
+                    type(port1)))
+        if not isinstance(port2, Port):
             raise FT4FTTSimException(
-                "receiver_port argument must be a port and not {}.".format(
-                    type(receiver_port)))
-        assert transmitter_port.is_free
-        assert receiver_port.is_free
-        self.env = env
-        self._transmitter_port = transmitter_port
-        transmitter_port.is_free = False
-        self._receiver_port = receiver_port
-        receiver_port.is_free = False
+                "port2 argument must be a port and not {}.".format(
+                    type(port2)))
+        assert port1.is_free
+        assert port2.is_free
+        self.sublink = (
+            Sublink(env, self, port1, port2),
+            Sublink(env, self, port2, port1)
+        )
+        port1.is_free = False
+        port2.is_free = False
         self.megabits_per_second = megabits_per_second
         self.propagation_delay_us = propagation_delay_us
-        env.process(self.run())
-
-    @property
-    def transmitter_port(self):
-        return self._transmitter_port
-
-    @transmitter_port.setter
-    def transmitter_port(self, port):
-        """
-        Set the port that will be transmitting through the link instance.
-
-        Arguments:
-            port: The port of the NetworkDevice instance to be set as the
-                transmitter port for the link.
-
-        """
-        if self._transmitter_port is not None:
-            raise FT4FTTSimException("Link already has a transmitter.")
-        self._transmitter_port = port
-
-    @property
-    def receiver_port(self):
-        return self._receiver_port
-
-    @receiver_port.setter
-    def receiver_port(self, port):
-        """
-        Set the port that will be receiving the traffic through the link
-        instance.
-
-        Arguments:
-            port: The port of the NetworkDevice instance to be set as the
-                receiver port for the link.
-
-        """
-        if self._receiver_port is not None:
-            raise FT4FTTSimException("Link already has a receiver.")
-        self._receiver_port = port
 
     def transmission_time_us(self, num_bytes):
         """
@@ -157,6 +115,74 @@ class Link:
         transmission_time_us = (bits_to_transmit / self.megabits_per_second)
         return transmission_time_us
 
+
+class Sublink:
+    """
+    Sublinks are directional, i.e., they have a single transmitter and a single
+    receiver port. Messages that are being modeled as being transmitted can
+    only be transmitted from the transmitter to the receiver port, but not in
+    the opposite direction. At any one time at most one message can be
+    transmitted through a sublink. If the transmission of additional messages
+    is ordered through the sublink, then they will be queued.
+
+    """
+    def __init__(
+            self, env, link,
+            transmitter_port, receiver_port):
+        """
+        Create a new instance of class Sublink.
+
+        Arguments:
+            link: the link that the sublink instance is a part of.
+            transmitter_port: An instance of Port that will be attached to
+                the link instance as the transmitter.
+            receiver_port: An instance of Port that will be attached to
+                the link instance as the receiver.
+
+        """
+        self.env = env
+        self.link = link
+        self._transmitter_port = transmitter_port
+        self._receiver_port = receiver_port
+        env.process(self.run())
+
+    @property
+    def transmitter_port(self):
+        return self._transmitter_port
+
+    @transmitter_port.setter
+    def transmitter_port(self, port):
+        """
+        Set the port that will be transmitting through the sublink instance.
+
+        Arguments:
+            port: The port of the NetworkDevice instance to be set as the
+                transmitter port for the sublink.
+
+        """
+        if self._transmitter_port is not None:
+            raise FT4FTTSimException("Sublink already has a transmitter.")
+        self._transmitter_port = port
+
+    @property
+    def receiver_port(self):
+        return self._receiver_port
+
+    @receiver_port.setter
+    def receiver_port(self, port):
+        """
+        Set the port that will be receiving the traffic through the sublink
+        instance.
+
+        Arguments:
+            port: The port of the NetworkDevice instance to be set as the
+                receiver port for the sublink.
+
+        """
+        if self._receiver_port is not None:
+            raise FT4FTTSimException("Sublink already has a receiver.")
+        self._receiver_port = port
+
     def run(self):
         """
         Get a message from the transmitter port and simulate its transmission.
@@ -171,13 +197,13 @@ class Link:
                                  Ethernet.SFD_SIZE_BYTES +
                                  message.size_bytes)
             yield self.env.timeout(
-                self.transmission_time_us(bytes_to_transmit) +
-                self.propagation_delay_us)
+                self.link.transmission_time_us(bytes_to_transmit) +
+                self.link.propagation_delay_us)
             log.debug("{} transmission of {} finished".format(self, message))
             self.receiver_port.in_queue.put(message)
             # wait for the duration of the ethernet interframe gap to elapse
             yield self.env.timeout(
-                self.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
+                self.link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
             log.debug("{} inter frame gap finished".format(self))
 
     def __repr__(self):

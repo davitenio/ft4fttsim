@@ -15,7 +15,7 @@ def port():
 def test_link_has_correct_transmitter_port(env, port):
     device = NetworkDevice(env, "test device", 1)
     link = Link(env, device.ports[0], port, 1, 1)
-    assert device.ports == [link.transmitter_port]
+    assert device.ports == [link.sublink[0].transmitter_port]
 
 
 @pytest.fixture(params=list(range(3)) + [20])
@@ -32,7 +32,7 @@ def test_links_have_correct_transmitter_ports(env, port):
 def test_link_has_correct_receiver_port(env, port):
     device = NetworkDevice(env, "test device", 1)
     link = Link(env, port, device.ports[0], 1, 1)
-    assert device.ports[0] == link.receiver_port
+    assert device.ports[0] == link.sublink[0].receiver_port
 
 
 @pytest.fixture(params=list(range(3)) + [20])
