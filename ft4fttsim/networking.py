@@ -195,6 +195,44 @@ class NetworkDevice:
                       for i in range(num_ports)]
         self.name = name
 
+    def listen_for_messages(self, callback):
+        """
+        Wait for the reception of messages on all ports and, once messages are
+        received, invoke the callback function passing the received messages as
+        a parameter.
+
+        """
+        # generate get requests for all input queues
+        requests = [port.in_queue.get() for port in self.ports]
+        while requests:
+            # helper variable for the asserts
+            queues_with_pending_requests = [req.resource for req in requests]
+            # There is a request for each input queue.
+            assert set(self.input_queues) == set(queues_with_pending_requests)
+            # For each input queue there's exactly one request.
+            assert (
+                len(queues_with_pending_requests) ==
+                len(set(queues_with_pending_requests)))
+
+            log.debug("{} sleeping until next reception".format(self))
+            completed_requests = (yield self.env.any_of(requests))
+            received_messages = completed_requests.values()
+            log.debug("{} received {}".format(
+                self, received_messages))
+
+            callback(received_messages)
+
+            # Only leave the requests which have not been completed yet
+            remaining_requests = [
+                req for req in requests if req not in completed_requests]
+            # Input queues that have been emptied since the last wake up.
+            emptied_queues = [req.resource for req in completed_requests]
+            # Add new get requests for the input queues that have been emptied.
+            new_requests = []
+            for input_queue in emptied_queues:
+                new_requests.append(input_queue.get())
+            requests = remaining_requests + new_requests
+
     def instruct_transmission(self, message, port):
         """
         Note that this is a generator function. It should not be called
@@ -246,8 +284,8 @@ class MessageRecordingDevice(NetworkDevice):
 
     def __init__(self, env, name, num_ports):
         NetworkDevice.__init__(self, env, name, num_ports)
-        env.process(self.run())
         self.reception_records = {}
+        self.env.process(self.listen_for_messages(self.do_timestamp_messages))
 
     def connect_outlink(self, link):
         raise NotImplementedError()
@@ -258,37 +296,10 @@ class MessageRecordingDevice(NetworkDevice):
     def instruct_transmission(self, message, outlink):
         raise NotImplementedError()
 
-    def run(self):
-        # generate get requests for all input queues
-        requests = [port.in_queue.get() for port in self.ports]
-        while requests:
-            # helper variable for the asserts
-            queues_with_pending_requests = [req.resource for req in requests]
-            # There is a request for each input queue.
-            assert set(self.input_queues) == set(queues_with_pending_requests)
-            # For each input queue there's exactly one request.
-            assert (
-                len(queues_with_pending_requests) ==
-                len(set(queues_with_pending_requests)))
-
-            log.debug("{} sleeping until next reception".format(self))
-            completed_requests = (yield self.env.any_of(requests))
-            received_messages = completed_requests.values()
-            log.debug("{} received {}".format(
-                self, received_messages))
-            timestamp = self.env.now
-            self.reception_records[timestamp] = received_messages
-            log.debug("{} recorded {}".format(self, self.reception_records))
-            # Only leave the requests which have not been completed yet
-            remaining_requests = [
-                req for req in requests if req not in completed_requests]
-            # Input queues that have been emptied since the last wake up.
-            emptied_queues = [req.resource for req in completed_requests]
-            # Add new get requests for the input queues that have been emptied.
-            new_requests = []
-            for input_queue in emptied_queues:
-                new_requests.append(input_queue.get())
-            requests = remaining_requests + new_requests
+    def do_timestamp_messages(self, messages):
+        timestamp = self.env.now
+        self.reception_records[timestamp] = messages
+        log.debug("{} recorded {}".format(self, self.reception_records))
 
     @property
     def recorded_messages(self):
@@ -377,7 +388,7 @@ class Switch(NetworkDevice):
 
     def __init__(self, env, name, num_ports):
         NetworkDevice.__init__(self, env, name, num_ports)
-        env.process(self.run())
+        env.process(self.listen_for_messages(self.forward_messages))
 
     def forward_messages(self, message_list):
         """
@@ -414,40 +425,6 @@ class Switch(NetworkDevice):
                 new_message = Message.from_message(message)
                 self.env.process(
                     self.instruct_transmission(new_message, port))
-
-    def run(self):
-        # TODO: refactor the code below into a shared function between
-        # Switch and MessageRecordingDevice since most of the code below is
-        # the same as in MessageRecordingDevice.run()
-
-        # generate get requests for all input queues
-        requests = [port.in_queue.get() for port in self.ports]
-        while requests:
-            # helper variable for the asserts
-            queues_with_pending_requests = [req.resource for req in requests]
-            # There is a request for each input queue.
-            assert set(self.input_queues) == set(queues_with_pending_requests)
-            # For each input queue there's exactly one request.
-            assert (
-                len(queues_with_pending_requests) ==
-                len(set(queues_with_pending_requests)))
-
-            log.debug("{} sleeping until next reception".format(self))
-            completed_requests = (yield self.env.any_of(requests))
-            received_messages = completed_requests.values()
-            log.debug("{} received {}".format(
-                self, received_messages))
-            self.forward_messages(received_messages)
-            # Only leave the requests which have not been completed yet
-            remaining_requests = [
-                req for req in requests if req not in completed_requests]
-            # Input queues that have been emptied since the last wake up.
-            emptied_queues = [req.resource for req in completed_requests]
-            # Add new get requests for the input queues that have been emptied.
-            new_requests = []
-            for input_queue in emptied_queues:
-                new_requests.append(input_queue.get())
-            requests = remaining_requests + new_requests
 
 
 class Message:
