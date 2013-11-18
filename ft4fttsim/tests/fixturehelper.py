@@ -2,14 +2,20 @@
 
 
 PLAYBACK_CONFIGS = [
-    "single message",
+    "single message t0",
+    "single message t1",
     "2 messages",
     "8 messages",
     "3 batches of 2 messages",
 ]
 
 
-def make_playback_device(config, env, msg_destination, link, name="player"):
+from ft4fttsim.networking import MessagePlaybackDevice
+
+
+def make_playback_device(
+        config, env, msg_destination, name="player",
+        cls=MessagePlaybackDevice):
     """
     Return a new instance of MessagePlaybackDevice configured according to the
     arguments.
@@ -20,18 +26,28 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
         msg_destination: value to put into the destination field of the
             messages to be transmitted by the playback device that will be
             created.
-        link: an instance of Link that will be attached as the outlink for the
-            playback device that will be created.
+        name: a string used to identify the message playback device created.
+        cls: the class to use to instantiate a new message playback device.
+            This is useful to make a message playback device that is an
+            instance of a subclass of MessagePlaybackDevice.
 
     """
-    from ft4fttsim.networking import MessagePlaybackDevice, Message
-    player = MessagePlaybackDevice(env, name)
-    player.connect_outlink(link)
-    if config == "single message":
-        messages = [Message(env, player, msg_destination, 1518, "message")]
+    from ft4fttsim.networking import Message
+    player = cls(env, name, 1)
+    port = player.ports[0]
+    if config == "single message t0":
+        messages = [Message(env, player, msg_destination, 1518, "message t0")]
         player.load_transmission_commands(
             {
-                0: {link: messages}
+                0: {port: messages}
+            }
+        )
+        player.messages_to_transmit = messages
+    elif config == "single message t1":
+        messages = [Message(env, player, msg_destination, 1518, "message t1")]
+        player.load_transmission_commands(
+            {
+                1: {port: messages}
             }
         )
         player.messages_to_transmit = messages
@@ -42,8 +58,8 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
         ]
         player.load_transmission_commands(
             {
-                0: {link: message_lists[0]},
-                1: {link: message_lists[1]},
+                0: {port: message_lists[0]},
+                1: {port: message_lists[1]},
             }
         )
         player.messages_to_transmit = [
@@ -62,14 +78,14 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
         ]
         player.load_transmission_commands(
             {
-                0: {link: message_lists[0]},
-                1: {link: message_lists[1]},
-                5: {link: message_lists[2]},
-                6: {link: message_lists[3]},
-                9: {link: message_lists[4]},
-                15: {link: message_lists[5]},
-                123: {link: message_lists[6]},
-                11114: {link: message_lists[7]},
+                0: {port: message_lists[0]},
+                1: {port: message_lists[1]},
+                5: {port: message_lists[2]},
+                6: {port: message_lists[3]},
+                9: {port: message_lists[4]},
+                15: {port: message_lists[5]},
+                123: {port: message_lists[6]},
+                11114: {port: message_lists[7]},
             }
         )
         player.messages_to_transmit = [
@@ -98,9 +114,9 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
         ]
         player.load_transmission_commands(
             {
-                100: {link: message_lists[0]},
-                111: {link: message_lists[1]},
-                555: {link: message_lists[2]},
+                100: {port: message_lists[0]},
+                111: {port: message_lists[1]},
+                555: {port: message_lists[2]},
             }
         )
         player.messages_to_transmit = [
@@ -113,7 +129,8 @@ def make_playback_device(config, env, msg_destination, link, name="player"):
 LINK_CONFIGS = [(10, 3), (100, 0), (1000, 9)]
 
 
-def make_link(config, env):
+def make_link(config, env, port1, port2):
     from ft4fttsim.networking import Link
     Mbps, delay = config
-    return Link(env, megabits_per_second=Mbps, propagation_delay_us=delay)
+    return Link(env, port1, port2, megabits_per_second=Mbps,
+                propagation_delay_us=delay)
