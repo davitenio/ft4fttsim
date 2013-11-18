@@ -10,7 +10,12 @@ PLAYBACK_CONFIGS = [
 ]
 
 
-def make_playback_device(config, env, msg_destination, name="player"):
+from ft4fttsim.networking import MessagePlaybackDevice
+
+
+def make_playback_device(
+        config, env, msg_destination, name="player",
+        cls=MessagePlaybackDevice):
     """
     Return a new instance of MessagePlaybackDevice configured according to the
     arguments.
@@ -21,12 +26,14 @@ def make_playback_device(config, env, msg_destination, name="player"):
         msg_destination: value to put into the destination field of the
             messages to be transmitted by the playback device that will be
             created.
-        link: an instance of Link that will be attached as the outlink for the
-            playback device that will be created.
+        name: a string used to identify the message playback device created.
+        cls: the class to use to instantiate a new message playback device.
+            This is useful to make a message playback device that is an
+            instance of a subclass of MessagePlaybackDevice.
 
     """
-    from ft4fttsim.networking import MessagePlaybackDevice, Message
-    player = MessagePlaybackDevice(env, name, 1)
+    from ft4fttsim.networking import Message
+    player = cls(env, name, 1)
     port = player.ports[0]
     if config == "single message t0":
         messages = [Message(env, player, msg_destination, 1518, "message t0")]

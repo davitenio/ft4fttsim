@@ -246,9 +246,9 @@ class NetworkDevice:
                 len(queues_with_pending_requests) ==
                 len(set(queues_with_pending_requests)))
 
-            log.debug("{} sleeping until next reception".format(self))
+            log.debug("{} waiting for next reception".format(self))
             completed_requests = (yield self.env.any_of(requests))
-            received_messages = completed_requests.values()
+            received_messages = list(completed_requests.values())
             log.debug("{} received {}".format(
                 self, received_messages))
 
@@ -301,6 +301,17 @@ class NetworkDevice:
         return self.name
 
 
+class EchoDevice(NetworkDevice):
+
+    def __init__(self, env, name):
+        NetworkDevice.__init__(self, env, name, 1)
+        self.env.process(self.listen_for_messages(self.echo))
+
+    def echo(self, messages):
+        for m in messages:
+            self.env.process(self.instruct_transmission(m, self.ports[0]))
+
+
 class MessageRecordingDevice(NetworkDevice):
     """
     Class whose instances model a passive receiver.
@@ -318,9 +329,6 @@ class MessageRecordingDevice(NetworkDevice):
         NetworkDevice.__init__(self, env, name, num_ports)
         self.reception_records = {}
         self.env.process(self.listen_for_messages(self.do_timestamp_messages))
-
-    def instruct_transmission(self, message, port):
-        raise NotImplementedError()
 
     def do_timestamp_messages(self, messages):
         timestamp = self.env.now
@@ -386,8 +394,8 @@ class MessagePlaybackDevice(NetworkDevice):
     def run(self):
         for time in sorted(self.transmission_commands):
             delay_before_next_tx_order = time - self.env.now
-            log.debug("{} sleeping until next transmission".format(self))
-            # sleep until next transmission time
+            log.debug("{} waiting for next transmission time".format(self))
+            # wait until next transmission time
             yield self.env.timeout(delay_before_next_tx_order)
             for port, messages_to_tx in \
                     self.transmission_commands[time].items():
@@ -398,6 +406,15 @@ class MessagePlaybackDevice(NetworkDevice):
     @property
     def transmission_start_times(self):
         return sorted(self.transmission_commands.keys())
+
+
+class MessagePlaybackAndRecordingDevice(
+        MessagePlaybackDevice, MessageRecordingDevice):
+
+    def __init__(self, env, name, num_ports):
+        MessagePlaybackDevice.__init__(self, env, name, num_ports)
+        self.reception_records = {}
+        self.env.process(self.listen_for_messages(self.do_timestamp_messages))
 
 
 class Switch(NetworkDevice):
