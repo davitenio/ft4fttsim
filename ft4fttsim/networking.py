@@ -306,7 +306,7 @@ class MessageRecordingDevice(NetworkDevice):
     Class whose instances model a passive receiver.
 
     Instances of this class cannot transmit messages. All they do is wait for
-    the reception of a message on any one of their inlinks and record the
+    the reception of a message on any one of their ports and record the
     received message in an internal buffer together with a timestamp of the
     reception time.
 
@@ -319,13 +319,7 @@ class MessageRecordingDevice(NetworkDevice):
         self.reception_records = {}
         self.env.process(self.listen_for_messages(self.do_timestamp_messages))
 
-    def connect_outlink(self, link):
-        raise NotImplementedError()
-
-    def connect_outlink_list(self, link):
-        raise NotImplementedError()
-
-    def instruct_transmission(self, message, outlink):
+    def instruct_transmission(self, message, port):
         raise NotImplementedError()
 
     def do_timestamp_messages(self, messages):
@@ -352,7 +346,7 @@ class MessagePlaybackDevice(NetworkDevice):
     Instances of this class cannot receive messages. What they do is accept a
     series of transmission commands and then execute them. Each transmission
     command specifies what message to transmit at what time and through which
-    outlink.
+    port.
 
     The main purpose of instances of this class is to make testing easier.
 
@@ -388,12 +382,6 @@ class MessagePlaybackDevice(NetworkDevice):
         self.transmission_commands = transmission_commands
         log.debug("{} loaded transmissions: {}".format(
             self, self.transmission_commands))
-
-    def connect_inlink(self, link):
-        raise NotImplementedError()
-
-    def connect_inlink_list(self, link):
-        raise NotImplementedError()
 
     def run(self):
         for time in sorted(self.transmission_commands):
