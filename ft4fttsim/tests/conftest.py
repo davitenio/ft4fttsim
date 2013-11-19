@@ -13,6 +13,12 @@ def env():
 
 
 @pytest.fixture
-def switch(env):
+def switch2(env):
     from ft4fttsim.networking import Switch
-    return Switch(env, "switch")
+    return Switch(env, "switch", 2)
+
+
+@pytest.fixture
+def switch4(env):
+    from ft4fttsim.networking import Switch
+    return Switch(env, "switch4", num_ports=4)

@@ -3,55 +3,45 @@
 import pytest
 from unittest.mock import sentinel, Mock
 from ft4fttsim.networking import *
-from ft4fttsim.tests.fixturehelper import make_link
-from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
-
-
-@pytest.fixture(params=LINK_CONFIGS)
-def link(env, request):
-    config = request.param
-    new_link = make_link(config, env)
-    return new_link
 
 
 @pytest.fixture
-def device(env):
-    return NetworkDevice(env, "test device")
+def port():
+    stub_port = Mock(spec=Port)
+    stub_port.is_free = True
+    return stub_port
+
+
+def test_link_has_correct_transmitter_port(env, port):
+    device = NetworkDevice(env, "test device", 1)
+    link = Link(env, device.ports[0], port, 1, 1)
+    assert device.ports == [link.sublink[0].transmitter_port]
 
 
 @pytest.fixture(params=list(range(3)) + [20])
-def multiple_links(env, request):
+def test_links_have_correct_transmitter_ports(env, port):
     num_links = request.param
-    return [Link(env, 10, 0) for i in range(num_links)]
+    device = NetworkDevice(env, "test device", num_ports=num_links)
+    multiple_links = []
+    for i in range(num_links):
+        multiple_links.append(
+            Link(env, device.ports[i], port, 100, 0))
+    assert device.ports == [L.transmitter_port for L in multiple_links]
 
 
-def test_get_outlinks__connect_1_outlink__returns_new_outlink(device, link):
-    device.connect_outlink(link)
-    assert device.outlinks == [link]
+def test_link_has_correct_receiver_port(env, port):
+    device = NetworkDevice(env, "test device", 1)
+    link = Link(env, port, device.ports[0], 1, 1)
+    assert device.ports[0] == link.sublink[0].receiver_port
 
 
-def test_connect_outlinks__returns_outlinks(device, multiple_links):
-    for link in multiple_links:
-        device.connect_outlink(link)
-    assert device.outlinks == multiple_links
-
-
-def test_connect_outlink_list__returns_outlinks(device, multiple_links):
-    device.connect_outlink_list(multiple_links)
-    assert device.outlinks == multiple_links
-
-
-def test_get_inlinks__connect_1_inlink__returns_new_inlink(device, link):
-    device.connect_inlink(link)
-    assert device.inlinks == [link]
-
-
-def test_connect_inlinks__returns_inlinks(device, multiple_links):
-    for link in multiple_links:
-        device.connect_inlink(link)
-    assert device.inlinks == multiple_links
-
-
-def test_connect_inlink_list__returns_inlinks(device, multiple_links):
-    device.connect_inlink_list(multiple_links)
-    assert device.inlinks == multiple_links
+@pytest.fixture(params=list(range(3)) + [20])
+def test_links_have_correct_receiver_ports(env, port):
+    num_links = request.param
+    device = NetworkDevice(env, "test device", 1)
+    multiple_links = []
+    for i in range(num_links):
+        multiple_links.append(
+            Link(env, port, device.ports[0], 100, 0))
+    assert all(
+        [L.receiver_port == device.ports[0] for L in multiple_links])
