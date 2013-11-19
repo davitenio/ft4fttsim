@@ -3,15 +3,15 @@
 Perform tests under the following network:
 
                    +--------+  link1  +-----------+
-                   |        | ------> | recorder1 |
+                   |        1 ------> 0 recorder1 |
 +--------+  link0  |        |         +-----------+
-| player | ------> | switch |
+| player 0 ------> 0 switch |
 +--------+         |        |  link2  +-----------+
-                   |        | ------> | recorder2 |
-                   +--------+         +-----------+
+                   |        2 ------> 0 recorder2 |
+                   +----3---+         +-----------+
                         | link3
                         v
-                  +-----------+
+                  +-----0-----+
                   | recorder3 |
                   +-----------+
 
@@ -56,39 +56,24 @@ def player_rec13(request, env, recorder1, recorder3):
     return new_playback_device
 
 
-@pytest.fixture(params=[(100, 0)])
-def link0(env, request, player_rec13, switch4):
-    config = request.param
-    new_link = make_link(
-        config, env, player_rec13.ports[0], switch4.ports[0])
-    return new_link
+@pytest.fixture
+def switch_pr13(env, player_rec13, recorder1, recorder2, recorder3):
+    from ft4fttsim.networking import Switch
+    new_switch = Switch(env, "switch4", num_ports=4)
+    make_link((1000, 123), env, player_rec13.ports[0], new_switch.ports[0])
+    make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])
+    make_link((1000, 123), env, recorder2.ports[0], new_switch.ports[2])
+    make_link((1000, 123), env, recorder3.ports[0], new_switch.ports[3])
+    new_switch.forwarding_table = {
+        player_rec13: set([new_switch.ports[0]]),
+        recorder1: set([new_switch.ports[1]]),
+        recorder2: set([new_switch.ports[2]]),
+        recorder3: set([new_switch.ports[3]]),
+    }
+    return new_switch
 
 
-@pytest.fixture(params=[(100, 0)])
-def link1(env, request, switch4, recorder1):
-    config = request.param
-    new_link = make_link(
-        config, env, switch4.ports[1], recorder1.ports[0])
-    return new_link
-
-
-@pytest.fixture(params=[(100, 0)])
-def link2(env, request, switch4, recorder2):
-    config = request.param
-    new_link = make_link(
-        config, env, switch4.ports[2], recorder2.ports[0])
-    return new_link
-
-
-@pytest.fixture(params=[(100, 0)])
-def link3(env, request, switch4, recorder3):
-    config = request.param
-    new_link = make_link(
-        config, env, switch4.ports[3], recorder3.ports[0])
-    return new_link
-
-
-@pytest.mark.usefixtures("link0", "link1", "link2", "link3")
+@pytest.mark.usefixtures("switch_pr13")
 def test_messages_are_received_by_recorder1(
         env, player_rec13, recorder1):
     """
@@ -99,7 +84,7 @@ def test_messages_are_received_by_recorder1(
     assert player_rec13.messages_to_transmit == received_messages
 
 
-@pytest.mark.usefixtures("link0", "link1", "link2", "link3")
+@pytest.mark.usefixtures("switch_pr13")
 def test_messages_are_received_by_recorder3(
         env, player_rec13, recorder3):
     """
@@ -110,10 +95,7 @@ def test_messages_are_received_by_recorder3(
     assert player_rec13.messages_to_transmit == received_messages
 
 
-# until the switch implements proper forwarding mechanism, we expect the
-# following test to fail.
-@pytest.mark.xfail
-@pytest.mark.usefixtures("link0", "link1", "link2", "link3")
+@pytest.mark.usefixtures("switch_pr13")
 def test_no_message_is_received_by_recorder2(env, recorder2):
     """
     Test that recorder2 does not receive any message.

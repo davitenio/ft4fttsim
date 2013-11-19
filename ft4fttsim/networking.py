@@ -423,9 +423,12 @@ class Switch(NetworkDevice):
 
     """
 
-    def __init__(self, env, name, num_ports):
+    def __init__(self, env, name, num_ports, forwarding_table={}):
         NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.listen_for_messages(self.forward_messages))
+        # Dictionary whose keys are network devices and whose values are ports
+        # of the Switch instance.
+        self.forwarding_table = forwarding_table
 
     def forward_messages(self, message_list):
         """
@@ -447,13 +450,20 @@ class Switch(NetworkDevice):
                     of NetworkDevice instances.
 
             Returns:
-                A list of the ports that lead to the devices in 'destination'.
+                A set of the ports that lead to the devices in 'destination'.
 
             """
-            # TODO: implement look up in the forwarding table.
-            # For now we simply return all ports, which basically makes
-            # the switch behave as a hub.
-            return self.ports
+            output_ports = set()
+            if isinstance(destination, collections.Iterable):
+                for device in destination:
+                    # ports leading to device
+                    ports_towards_device = self.forwarding_table.get(
+                        device, self.ports)
+                    output_ports.update(ports_towards_device)
+            else:
+                output_ports.update(
+                    self.forwarding_table.get(destination, self.ports))
+            return output_ports
 
         for message in message_list:
             destinations = message.destination
