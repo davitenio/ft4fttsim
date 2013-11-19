@@ -3,11 +3,11 @@
 Perform tests under the following network:
 
                  +--------+ link1  +-----------+
-                 |        | -----> | recorder1 |
+                 |        1 -----> 0 recorder1 |
 +--------+ link0 |        |        +-----------+
-| player | ----> | switch |
+| player 0 ----> 0 switch |
 +--------+       |        | link2  +-----------+
-                 |        | -----> | recorder2 |
+                 |        2 -----> 0 recorder2 |
                  +--------+        +-----------+
 """
 
@@ -44,36 +44,21 @@ def player_rec1(request, env, recorder1):
 
 
 @pytest.fixture
-def switch3(env):
+def switch_pr1(env, player_rec1, recorder1, recorder2):
     from ft4fttsim.networking import Switch
-    return Switch(env, "switch3", num_ports=3)
+    new_switch = Switch(env, "switch3", num_ports=3)
+    make_link((1000, 123), env, player_rec1.ports[0], new_switch.ports[0])
+    make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])
+    make_link((1000, 123), env, recorder2.ports[0], new_switch.ports[2])
+    new_switch.forwarding_table = {
+        player_rec1: set([new_switch.ports[0]]),
+        recorder1: set([new_switch.ports[1]]),
+        recorder2: set([new_switch.ports[2]]),
+    }
+    return new_switch
 
 
-@pytest.fixture(params=[(1000, 123)])
-def link0_pr1(env, request, player_rec1, switch3):
-    config = request.param
-    new_link = make_link(
-        config, env, player_rec1.ports[0], switch3.ports[0])
-    return new_link
-
-
-@pytest.fixture(params=[(1000, 123)])
-def link1(env, request, switch3, recorder1):
-    config = request.param
-    new_link = make_link(
-        config, env, switch3.ports[1], recorder1.ports[0])
-    return new_link
-
-
-@pytest.fixture(params=[(1000, 123)])
-def link2(env, request, switch3, recorder2):
-    config = request.param
-    new_link = make_link(
-        config, env, switch3.ports[2], recorder2.ports[0])
-    return new_link
-
-
-@pytest.mark.usefixtures("link0_pr1", "link1", "link2")
+@pytest.mark.usefixtures("switch_pr1")
 def test_messages_are_received_by_recorder1(
         env, player_rec1, recorder1):
     """
@@ -85,18 +70,14 @@ def test_messages_are_received_by_recorder1(
     assert player_rec1.messages_to_transmit == received_messages
 
 
-# until the switch implements proper forwarding mechanism, we expect the
-# following test to fail.
-@pytest.mark.xfail
+@pytest.mark.usefixtures("switch_pr1")
 def test_no_message_is_received_by_recorder2(
-        env, player_rec1_switch_recorder1_recorder2):
+        env, player_rec1, recorder2):
     """
     Test that recorder2 does not receive any message.
 
     """
     env.run(until=float("inf"))
-    player = player_rec1_switch_recorder1_recorder2[0]
-    recorder2 = player_rec1_switch_recorder1_recorder2[3]
     received_messages = recorder2.recorded_messages
     assert len(received_messages) == 0
 
@@ -113,15 +94,22 @@ def player_rec2(request, env, recorder2):
     return new_playback_device
 
 
-@pytest.fixture(params=[(1000, 123)])
-def link0_pr2(env, request, player_rec2, switch3):
-    config = request.param
-    new_link = make_link(
-        config, env, player_rec2.ports[0], switch3.ports[0])
-    return new_link
+@pytest.fixture
+def switch_pr2(env, player_rec2, recorder1, recorder2):
+    from ft4fttsim.networking import Switch
+    new_switch = Switch(env, "switch3", num_ports=3)
+    make_link((1000, 123), env, player_rec2.ports[0], new_switch.ports[0])
+    make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])
+    make_link((1000, 123), env, recorder2.ports[0], new_switch.ports[2])
+    new_switch.forwarding_table = {
+        player_rec2: set([new_switch.ports[0]]),
+        recorder1: set([new_switch.ports[1]]),
+        recorder2: set([new_switch.ports[2]]),
+    }
+    return new_switch
 
 
-@pytest.mark.usefixtures("link0_pr2", "link1", "link2")
+@pytest.mark.usefixtures("switch_pr2")
 def test_messages_are_received_by_recorder2(
         env, player_rec2, recorder2):
     """
@@ -133,18 +121,14 @@ def test_messages_are_received_by_recorder2(
     assert player_rec2.messages_to_transmit == received_messages
 
 
-# until the switch implements proper forwarding mechanism, we expect the
-# following test to fail.
-@pytest.mark.xfail
+@pytest.mark.usefixtures("switch_pr2")
 def test_no_message_is_received_by_recorder1(
-        env, player_rec2_switch_recorder1_recorder2):
+        env, player_rec2, recorder1):
     """
     Test that recorder1 does not receive any message.
 
     """
     env.run(until=float("inf"))
-    player = player_rec2_switch_recorder1_recorder2[0]
-    recorder1 = player_rec2_switch_recorder1_recorder2[2]
     received_messages = recorder1.recorded_messages
     assert len(received_messages) == 0
 
@@ -161,15 +145,22 @@ def player_rec12(request, env, recorder1, recorder2):
     return new_playback_device
 
 
-@pytest.fixture(params=[(1000, 123)])
-def link0_pr12(env, request, player_rec12, switch3):
-    config = request.param
-    new_link = make_link(
-        config, env, player_rec12.ports[0], switch3.ports[0])
-    return new_link
+@pytest.fixture
+def switch_pr12(env, player_rec12, recorder1, recorder2):
+    from ft4fttsim.networking import Switch
+    new_switch = Switch(env, "switch3", num_ports=3)
+    make_link((1000, 123), env, player_rec12.ports[0], new_switch.ports[0])
+    make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])
+    make_link((1000, 123), env, recorder2.ports[0], new_switch.ports[2])
+    new_switch.forwarding_table = {
+        player_rec12: set([new_switch.ports[0]]),
+        recorder1: set([new_switch.ports[1]]),
+        recorder2: set([new_switch.ports[2]]),
+    }
+    return new_switch
 
 
-@pytest.mark.usefixtures("link0_pr12", "link1", "link2")
+@pytest.mark.usefixtures("switch_pr12")
 def test_multicast_messages_are_received_by_recorder1(
         env, player_rec12, recorder1):
     """
@@ -181,7 +172,7 @@ def test_multicast_messages_are_received_by_recorder1(
     assert player_rec12.messages_to_transmit == received_messages
 
 
-@pytest.mark.usefixtures("link0_pr12", "link1", "link2")
+@pytest.mark.usefixtures("switch_pr12")
 def test_multicast_messages_are_received_by_recorder2(
         env, player_rec12, recorder2):
     """
