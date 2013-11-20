@@ -31,4 +31,4 @@ The code is written following the [PEP8][pep8] style guide for Python code. Comp
 Hacking
 =======
 
-If you modify the code, please run the Makefile at the root directory of the FT4FTTsim project before considering to commit into the git repository. This will invoke both `pep8` and the `runtests.sh` script, which then invokes `py.test`. If the code does not comply with PEP8, or some test fails, please fix the code and only then proceed with the git commit.
+If you modify the code, please run the Makefile at the root directory of the FT4FTTsim project before considering to commit into the git repository. This will invoke both `pep8` and the `runtests.sh` script, which then invokes `py.test`. If the code does not comply with PEP8, or some test fails, please fix the code and only then proceed with the git commit. Moreover, when adding new functionality, please write some tests in order to check that the code behaves as expected.
