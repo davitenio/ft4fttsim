@@ -422,15 +422,25 @@ class MessagePlaybackAndRecordingDevice(
 
 class Switch(NetworkDevice):
     """
-    Class whose instances model Ethernet switches.
+    Class whose instances model standard Ethernet switches.
 
     """
 
     def __init__(self, env, name, num_ports, forwarding_table={}):
+        """
+        Creates a new Switch instance.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the new switch instance.
+            num_ports: The number of ports that the new switch instance should
+                have.
+            forwarding_table: Dictionary whose keys are network devices and
+                whose values are ports of the Switch instance.
+
+        """
         NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.listen_for_messages(self.forward_messages))
-        # Dictionary whose keys are network devices and whose values are ports
-        # of the Switch instance.
         self.forwarding_table = forwarding_table
 
     def forward_messages(self, message_list):
