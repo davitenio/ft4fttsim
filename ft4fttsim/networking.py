@@ -502,7 +502,9 @@ class Message:
         """
         TRIGGER_MESSAGE, UPDATE_REQUEST = range(2)
 
-    def __init__(self, env, source, destination, size_bytes, message_type):
+    def __init__(
+            self, env, source, destination, size_bytes, message_type,
+            data=None):
         """
         Create an instance of Message.
 
@@ -520,6 +522,8 @@ class Message:
                 an IEEE 802.1Q tag.
             message_type: models the Ethertype field. Values should be one of
                 the attributes of the class Message.Type.
+            data: The data to be carried within the message. It models the
+                Ethernet data field.
 
         """
         if not isinstance(size_bytes, int):
@@ -540,9 +544,10 @@ class Message:
         self.destination = destination
         self.size_bytes = size_bytes
         self.message_type = message_type
-        self.name = "({:03d}, {}, {}, {:d}, {})".format(
+        self.data = data
+        self.name = "({:03d}, {}, {}, {:d}, {}, {})".format(
             self.ID, self.source, self.destination, self.size_bytes,
-            self.message_type)
+            self.message_type, self.data)
         log.debug("{} created".format(self))
 
     @classmethod
@@ -556,7 +561,8 @@ class Message:
             template_message.source,
             template_message.destination,
             template_message.size_bytes,
-            template_message.message_type)
+            template_message.message_type,
+            template_message.data)
         return new_equivalent_message
 
     def __eq__(self, message):
@@ -568,7 +574,8 @@ class Message:
         return (self.source == message.source and
                 self.destination == message.destination and
                 self.size_bytes == message.size_bytes and
-                self.message_type == message.message_type)
+                self.message_type == message.message_type and
+                self.data == message.data)
 
     def __str__(self):
         return self.name
