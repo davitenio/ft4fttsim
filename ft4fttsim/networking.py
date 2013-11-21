@@ -495,6 +495,13 @@ class Message:
     # next available ID for message objects
     next_ID = 0
 
+    class Type:
+        """
+        Class used as an enumeration type for different types of messages.
+
+        """
+        TRIGGER_MESSAGE, UPDATE_REQUEST = range(2)
+
     def __init__(self, env, source, destination, size_bytes, message_type):
         """
         Create an instance of Message.
@@ -511,7 +518,8 @@ class Message:
                 modeled by the Message instance created. The size does not
                 include the Ethernet preamble, the start of frame delimiter, or
                 an IEEE 802.1Q tag.
-            message_type: models the Ethertype field.
+            message_type: models the Ethertype field. Values should be one of
+                the attributes of the class Message.Type.
 
         """
         if not isinstance(size_bytes, int):
@@ -561,9 +569,6 @@ class Message:
                 self.destination == message.destination and
                 self.size_bytes == message.size_bytes and
                 self.message_type == message.message_type)
-
-    def is_trigger_message(self):
-        return self.message_type == "TM"
 
     def __str__(self):
         return self.name

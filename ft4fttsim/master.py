@@ -39,7 +39,8 @@ class Master(NetworkDevice):
         log.debug("{} broadcasting trigger message".format(self))
         for port in self.ports:
             trigger_message = Message(self.env, self, self.slaves,
-                                      Ethernet.MAX_FRAME_SIZE_BYTES, "TM")
+                                      Ethernet.MAX_FRAME_SIZE_BYTES,
+                                      Message.Type.TRIGGER_MESSAGE)
             log.debug(
                 "{} instruct transmission of trigger message".format(self))
             self.env.process(
