@@ -38,9 +38,12 @@ class Port:
         self.device = device
         # indicates whether the port is already connected to a link
         self.is_free = True
+        previous_ports = getattr(device, "ports", [])
+        # Used within __repr__
+        self.port_number = len(previous_ports)
 
     def __repr__(self):
-        return "{}-port{}".format(self.device, id(self))
+        return "{}-port{}".format(self.device, self.port_number)
 
 
 class Link:
