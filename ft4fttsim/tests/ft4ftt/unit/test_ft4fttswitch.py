@@ -5,12 +5,6 @@ from ft4fttsim.ft4ftt import FT4FTTSwitch, Master
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
-@pytest.fixture
-def master(env):
-    new_master = Master(env, "embedded master", 1, [], 10 ** 9, 1)
-    return new_master
-
-
 def test_FT4FTT_switch_constructor_does_not_raise_exception(env, master):
     # Invoking the FT4FTTSwitch constructor should not raise exception or cause
     # any error.

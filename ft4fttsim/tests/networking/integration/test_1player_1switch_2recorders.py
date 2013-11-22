@@ -12,35 +12,7 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
-from ft4fttsim.tests.fixturehelper import make_playback_device
-from ft4fttsim.tests.fixturehelper import make_link
-
-
-@pytest.fixture
-def recorder1(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder1", 1)
-    return recorder
-
-
-@pytest.fixture
-def recorder2(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder2", 1)
-    return recorder
-
-
-@pytest.fixture(params=PLAYBACK_CONFIGS)
-def player_rec1(request, env, recorder1):
-    """
-    Create a message playback device that sends messages to recorder 1 only.
-
-    """
-    config = request.param
-    new_playback_device = make_playback_device(
-        config, env, recorder1)
-    return new_playback_device
+from ft4fttsim.tests.networking.fixturehelper import make_link
 
 
 @pytest.fixture
@@ -82,18 +54,6 @@ def test_no_message_is_received_by_recorder2(
     assert len(received_messages) == 0
 
 
-@pytest.fixture(params=PLAYBACK_CONFIGS)
-def player_rec2(request, env, recorder2):
-    """
-    Create a message playback device that sends messages to recorder 2 only.
-
-    """
-    config = request.param
-    new_playback_device = make_playback_device(
-        config, env, recorder2)
-    return new_playback_device
-
-
 @pytest.fixture
 def switch_pr2(env, player_rec2, recorder1, recorder2):
     from ft4fttsim.networking import Switch
@@ -131,18 +91,6 @@ def test_no_message_is_received_by_recorder1(
     env.run(until=float("inf"))
     received_messages = recorder1.recorded_messages
     assert len(received_messages) == 0
-
-
-@pytest.fixture(params=PLAYBACK_CONFIGS)
-def player_rec12(request, env, recorder1, recorder2):
-    """
-    Create a player sending messages to recorder 1 and 2.
-
-    """
-    config = request.param
-    new_playback_device = make_playback_device(
-        config, env, [recorder1, recorder2])
-    return new_playback_device
 
 
 @pytest.fixture

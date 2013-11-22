@@ -2,60 +2,44 @@
 """
 Test the following network:
 
-+--------+      +----------+
-| player | ---> | recorder |
-+--------+      +----------+
++-------------+      +-----------+
+| player_rec1 | ---> | recorder1 |
++-------------+      +-----------+
+
 """
 
 from ft4fttsim.networking import *
 import pytest
-from ft4fttsim.tests.fixturehelper import make_playback_device
-from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
-from ft4fttsim.tests.fixturehelper import make_link
-from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
+from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link(env, request, player, recorder):
-    new_link = make_link(request.param, env, player.ports[0],
-                         recorder.ports[0])
+def link(env, request, player_rec1, recorder1):
+    new_link = make_link(request.param, env, player_rec1.ports[0],
+                         recorder1.ports[0])
     return new_link
-
-
-@pytest.fixture
-def recorder(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder", 1)
-    return recorder
-
-
-@pytest.fixture(params=PLAYBACK_CONFIGS)
-def player(request, env, recorder):
-    config = request.param
-    new_playback_device = make_playback_device(
-        config, env, recorder)
-    return new_playback_device
 
 
 @pytest.mark.usefixtures("link")
 def test_messages_played__equals_messages_recorded(
-        env, player, recorder):
+        env, player_rec1, recorder1):
     """
-    Test that the recorder receives the messages transmitted by player.
+    Test that the recorder1 receives the messages transmitted by player_rec1.
     """
     env.run(until=float("inf"))
-    assert (player.messages_to_transmit ==
-            recorder.recorded_messages)
+    assert (player_rec1.messages_to_transmit ==
+            recorder1.recorded_messages)
 
 
 BITS_PER_BYTE = 8
 
 
 def test_first_message_played__arrives_when_expected(
-        env, player, recorder, link):
+        env, player_rec1, recorder1, link):
     """
-    Test that the first message transmitted by the player arrives at the
-    recorder when expected.
+    Test that the first message transmitted by the player_rec1 arrives at the
+    recorder1 when expected.
     """
     def transmission_delay(message, link):
         bytes_transmitted = (
@@ -66,14 +50,14 @@ def test_first_message_played__arrives_when_expected(
         delay_in_us = bits_transmitted / float(link.megabits_per_second)
         return delay_in_us
     env.run(until=float("inf"))
-    message = recorder.recorded_messages[0]
-    # time it should take the first message to arrive at recorder in
+    message = recorder1.recorded_messages[0]
+    # time it should take the first message to arrive at recorder1 in
     # microseconds
     time_to_destination_in_us = (transmission_delay(message, link) +
                                  link.propagation_delay_us)
-    expected_timestamp = (player.transmission_start_times[0] +
+    expected_timestamp = (player_rec1.transmission_start_times[0] +
                           time_to_destination_in_us)
-    assert recorder.recorded_timestamps[0] == expected_timestamp
+    assert recorder1.recorded_timestamps[0] == expected_timestamp
 
 
 IFG = Ethernet.IFG_SIZE_BYTES
@@ -96,14 +80,14 @@ def test_interframe_gap(env, Mbps, num_bytes, expected_timestamp):
     to the transmission time of the first message.
 
     """
-    player = MessagePlaybackDevice(env, "player", 1)
-    port = player.ports[0]
-    recorder = MessageRecordingDevice(env, "recorder", 1)
-    link = Link(env, port, recorder.ports[0], Mbps, 0)
-    messages = [Message(env, player, recorder, num_bytes, "message0"),
-                Message(env, player, recorder, num_bytes, "message1")]
+    player_rec1 = MessagePlaybackDevice(env, "player_rec1", 1)
+    port = player_rec1.ports[0]
+    recorder1 = MessageRecordingDevice(env, "recorder1", 1)
+    link = Link(env, port, recorder1.ports[0], Mbps, 0)
+    messages = [Message(env, player_rec1, recorder1, num_bytes, "message0"),
+                Message(env, player_rec1, recorder1, num_bytes, "message1")]
     transmission_start_time = 0
-    player.load_transmission_commands(
+    player_rec1.load_transmission_commands(
         {
             transmission_start_time: {port: messages}
         }
@@ -111,4 +95,4 @@ def test_interframe_gap(env, Mbps, num_bytes, expected_timestamp):
     env.run(until=float("inf"))
     # check that the 2 recorded timestamps are almost equal (they will usually
     # not be exactly equal because of floating-point imprecision)
-    assert abs(recorder.recorded_timestamps[1] - expected_timestamp) < 0.00001
+    assert abs(recorder1.recorded_timestamps[1] - expected_timestamp) < 0.00001
