@@ -8,6 +8,29 @@ from ft4fttsim.networking import NetworkDevice, Port, Link, Message
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
+class MessageType:
+    """
+    Class used as an enumeration type for different types of FTT messages.
+
+    The attributes of this class are intended to be used as the message_type
+    attribute of ft4fttsim.networking.Message instances.
+
+    Example:
+
+    >>> env = simpy.Environment()
+    >>> d1 = NetworkDevice(env, "some device", 1)
+    >>> d2 = NetworkDevice(env, "another device", 1)
+    >>> msg = Message(env, d1, d2, 1234, MessageType.UPDATE_REQUEST)
+    >>> msg.message_type
+    'Update Req.'
+    >>> msg.message_type == MessageType.UPDATE_REQUEST
+    True
+
+    """
+    TRIGGER_MESSAGE = "TM"
+    UPDATE_REQUEST = "Update Req."
+
+
 SyncStreamConfig = namedtuple(
     'SyncStreamConfig',
     # The SyncStreamConfig parameters are expressed as integer multiples of the
@@ -76,7 +99,7 @@ class Master(NetworkDevice):
 
     def process_received_messages(self, messages):
         for m in messages:
-            if m.message_type == Message.Type.UPDATE_REQUEST:
+            if m.message_type == MessageType.UPDATE_REQUEST:
                 self.process_update_request_message(m)
 
     def broadcast_trigger_message(self):
@@ -84,7 +107,7 @@ class Master(NetworkDevice):
         for port in self.ports:
             trigger_message = Message(self.env, self, self.slaves,
                                       Ethernet.MAX_FRAME_SIZE_BYTES,
-                                      Message.Type.TRIGGER_MESSAGE)
+                                      MessageType.TRIGGER_MESSAGE)
             log.debug(
                 "{} instruct transmission of trigger message".format(self))
             self.env.process(
@@ -145,7 +168,7 @@ class FT4FTTSwitch(NetworkDevice):
             if m.destination == self.master:
                 self.env.process(
                     self.instruct_transmission(m, self.internal_port))
-            elif m.message_type == Message.Type.TRIGGER_MESSAGE:
+            elif m.message_type == MessageType.TRIGGER_MESSAGE:
                 self.flood_message(m)
 
 

@@ -524,14 +524,6 @@ class Message:
     # next available ID for message objects
     next_ID = 0
 
-    class Type:
-        """
-        Class used as an enumeration type for different types of messages.
-
-        """
-        TRIGGER_MESSAGE = "TM"
-        UPDATE_REQUEST = "Update Req."
-
     def __init__(
             self, env, source, destination, size_bytes, message_type,
             data=None):
@@ -550,8 +542,7 @@ class Message:
                 modeled by the Message instance created. The size does not
                 include the Ethernet preamble, the start of frame delimiter, or
                 an IEEE 802.1Q tag.
-            message_type: models the Ethertype field. Values should be one of
-                the attributes of the class Message.Type.
+            message_type: models the Ethertype field.
             data: The data to be carried within the message. It models the
                 Ethernet data field.
 

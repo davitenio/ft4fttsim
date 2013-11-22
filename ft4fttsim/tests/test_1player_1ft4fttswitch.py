@@ -13,7 +13,7 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.ft4ftt import Master, SyncStreamConfig
+from ft4fttsim.ft4ftt import Master, SyncStreamConfig, MessageType
 from ft4fttsim.networking import Message
 
 
@@ -36,7 +36,7 @@ def update_request_message(env, master):
     )
     update_request_data = ("synchronous stream 1", new_sync_config)
     new_update_request_message = Message(
-        env, sentinel.dummy_source, master, 1234, Message.Type.UPDATE_REQUEST,
+        env, sentinel.dummy_source, master, 1234, MessageType.UPDATE_REQUEST,
         update_request_data)
     return new_update_request_message
 
