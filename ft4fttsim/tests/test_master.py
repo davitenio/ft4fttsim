@@ -29,7 +29,8 @@ def master(env):
     return new_master
 
 
-def test_new_master__sync_requirements_is_empty(master):
+def test_new_master__sync_requirements_is_empty(env):
+    master = Master(env, "FTT master", 1, [], 123)
     assert master.sync_requirements == {}
 
 

@@ -23,7 +23,7 @@ class Master(NetworkDevice):
 
     def __init__(
             self, env, name, num_ports, slaves, elementary_cycle_us,
-            num_TMs_per_EC=1, sync_requirements={}):
+            num_TMs_per_EC=1, sync_requirements=None):
         """
         Constructor for FTT masters.
 
@@ -48,7 +48,10 @@ class Master(NetworkDevice):
         self.slaves = slaves
         self.EC_duration_us = elementary_cycle_us
         self.num_TMs_per_EC = num_TMs_per_EC
-        self.sync_requirements = sync_requirements
+        if sync_requirements is None:
+            self.sync_requirements = {}
+        else:
+            self.sync_requirements = sync_requirements
         # This counter is incremented after each successive elementary cycle
         self.EC_count = 0
         self.env.process(
