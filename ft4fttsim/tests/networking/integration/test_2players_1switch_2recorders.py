@@ -24,6 +24,12 @@ from ft4fttsim.tests.networking.fixturehelper import make_link
 
 
 @pytest.fixture
+def switch4(env):
+    from ft4fttsim.networking import Switch
+    return Switch(env, "switch4", num_ports=4)
+
+
+@pytest.fixture
 def recorder1(env):
     from ft4fttsim.networking import MessageRecordingDevice
     recorder = MessageRecordingDevice(env, "recorder1", 1)

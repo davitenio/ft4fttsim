@@ -15,6 +15,12 @@ from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
 
+@pytest.fixture
+def switch2(env):
+    from ft4fttsim.networking import Switch
+    return Switch(env, "switch", 2)
+
+
 @pytest.fixture(params=LINK_CONFIGS)
 def link1(env, request, player, switch2):
     config = request.param
