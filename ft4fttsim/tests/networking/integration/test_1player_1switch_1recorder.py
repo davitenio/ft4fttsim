@@ -2,15 +2,14 @@
 """
 Execute tests under the following network:
 
-+--------+ link1 +---------+ link2 +-----------+
-| player | ----> | switch2 | ----> | recorder1 |
-+--------+       +---------+       +-----------+
++-------------+ link1 +---------+ link2 +-----------+
+| player_rec1 | ----> | switch2 | ----> | recorder1 |
++-------------+       +---------+       +-----------+
+
 """
 
 
 import pytest
-from ft4fttsim.tests.networking.fixturehelper import make_playback_device
-from ft4fttsim.tests.networking.fixturehelper import PLAYBACK_CONFIGS
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
@@ -22,10 +21,10 @@ def switch2(env):
 
 
 @pytest.fixture(params=LINK_CONFIGS)
-def link1(env, request, player, switch2):
+def link1(env, request, player_rec1, switch2):
     config = request.param
     new_link = make_link(
-        config, env, player.ports[0], switch2.ports[0])
+        config, env, player_rec1.ports[0], switch2.ports[0])
     return new_link
 
 
@@ -37,20 +36,12 @@ def link2(env, request, switch2, recorder1):
     return new_link
 
 
-@pytest.fixture(params=PLAYBACK_CONFIGS)
-def player(request, env, recorder1):
-    config = request.param
-    new_playback_device = make_playback_device(
-        config, env, recorder1)
-    return new_playback_device
-
-
 @pytest.mark.usefixtures("link1", "link2")
 def test_messages_played__equals_messages_recorded(
-        env, player, recorder1):
+        env, player_rec1, recorder1):
     """
-    Test that the recorder1 receives the messages transmitted by player.
+    Test that the recorder1 receives the messages transmitted by player_rec1.
 
     """
     env.run(until=float("inf"))
-    assert player.messages_to_transmit == recorder1.recorded_messages
+    assert player_rec1.messages_to_transmit == recorder1.recorded_messages
