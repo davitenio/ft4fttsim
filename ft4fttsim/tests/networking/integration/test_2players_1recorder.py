@@ -25,6 +25,10 @@ from ft4fttsim.tests.networking.fixturehelper import make_link
 
 @pytest.fixture
 def recorder(env):
+    """
+    Create a MessageRecordingDevice instance with 2 ports.
+
+    """
     from ft4fttsim.networking import MessageRecordingDevice
     recorder = MessageRecordingDevice(env, "recorder", 2)
     return recorder
