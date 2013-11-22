@@ -28,25 +28,6 @@ def link2(env, request, switch2, recorder):
     return new_link
 
 
-@pytest.fixture
-def recorder(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder", 1)
-    return recorder
-
-
-@pytest.fixture(params=range(4))
-def master(request, env, recorder):
-    from ft4fttsim.master import Master
-    # number of trigger messages per elementary cycle
-    num_TMs_per_EC = request.param
-    # configured elementary cycle duration in microseconds
-    EC_duration_us = 10 ** 9
-    new_master = Master(env, "master", 1, [recorder], EC_duration_us,
-                        num_TMs_per_EC)
-    return new_master
-
-
 @pytest.mark.usefixtures("link1", "link2")
 @pytest.mark.parametrize("num_ECs", range(1, 4))
 def test_num_ECs_simulated__record_correct_number_of_messages(
