@@ -23,5 +23,13 @@ class FT4FTTSwitch(NetworkDevice):
                 "An embedded master must have exactly one port")
         NetworkDevice.__init__(self, env, name, num_ports)
         self.internal_port = Port(env, self)
+        self.ports.append(self.internal_port)
         Link(env, self.internal_port, master.ports[0], float("inf"), 0)
         self.master = master
+        env.process(self.listen_for_messages(self.process_received_messages))
+
+    def process_received_messages(self, messages):
+        for m in messages:
+            if m.destination == self.master:
+                self.env.process(
+                    self.instruct_transmission(m, self.internal_port))
