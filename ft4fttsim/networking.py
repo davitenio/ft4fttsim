@@ -500,7 +500,8 @@ class Message:
         Class used as an enumeration type for different types of messages.
 
         """
-        TRIGGER_MESSAGE, UPDATE_REQUEST = range(2)
+        TRIGGER_MESSAGE = "TM"
+        UPDATE_REQUEST = "Update Req."
 
     def __init__(
             self, env, source, destination, size_bytes, message_type,
