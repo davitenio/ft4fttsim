@@ -2,9 +2,9 @@
 
 
 import pytest
-from ft4fttsim.master import Master, SyncStreamConfig
+from ft4fttsim.ft4ftt import Master, SyncStreamConfig
 from ft4fttsim.networking import Message
-from ft4fttsim.slave import Slave
+from ft4fttsim.ft4ftt import Slave
 from unittest.mock import sentinel
 
 

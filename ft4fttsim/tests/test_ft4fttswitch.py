@@ -1,8 +1,7 @@
 # author: David Gessner <davidges@gmail.com>
 
 import pytest
-from ft4fttsim.ft4fttswitch import FT4FTTSwitch
-from ft4fttsim.master import Master
+from ft4fttsim.ft4ftt import FT4FTTSwitch, Master
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
