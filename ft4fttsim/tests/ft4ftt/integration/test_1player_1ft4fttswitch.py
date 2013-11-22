@@ -13,14 +13,8 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.ft4ftt import Master, SyncStreamConfig, MessageType
+from ft4fttsim.ft4ftt import SyncStreamConfig, MessageType
 from ft4fttsim.networking import Message
-
-
-@pytest.fixture
-def master(env):
-    new_master = Master(env, "FTT master", 1, [], 123)
-    return new_master
 
 
 @pytest.fixture

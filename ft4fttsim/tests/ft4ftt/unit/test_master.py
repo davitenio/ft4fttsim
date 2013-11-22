@@ -23,14 +23,7 @@ def test_master_constructor_does_not_raise_exception(
     Master(env, "FTT master", num_ports, slaves, 1234)
 
 
-@pytest.fixture
-def master(env):
-    new_master = Master(env, "FTT master", 1, [], 123)
-    return new_master
-
-
-def test_new_master__sync_requirements_is_empty(env):
-    master = Master(env, "FTT master", 1, [], 123)
+def test_new_master__sync_requirements_is_empty(master):
     assert master.sync_requirements == {}
 
 
