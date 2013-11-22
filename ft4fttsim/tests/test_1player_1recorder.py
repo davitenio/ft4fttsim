@@ -8,7 +8,6 @@ Test the following network:
 """
 
 from ft4fttsim.networking import *
-from ft4fttsim.ethernet import *
 import pytest
 from ft4fttsim.tests.fixturehelper import make_playback_device
 from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS

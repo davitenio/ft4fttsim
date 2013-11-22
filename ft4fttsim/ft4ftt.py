@@ -1,8 +1,7 @@
 # author: David Gessner <davidges@gmail.com>
 
 import simpy
-from ft4fttsim.networking import NetworkDevice, Message
-from ft4fttsim.ethernet import Ethernet
+from ft4fttsim.networking import NetworkDevice, Message, Ethernet
 from ft4fttsim.simlogging import log
 from collections import namedtuple
 from ft4fttsim.networking import NetworkDevice, Port, Link, Message

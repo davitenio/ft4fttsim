@@ -1,10 +1,9 @@
 # author: David Gessner <davidges@gmail.com>
 
 import pytest
-from ft4fttsim.networking import Message
+from ft4fttsim.networking import Message, Ethernet
 from ft4fttsim.exceptions import FT4FTTSimException
 from unittest.mock import sentinel, Mock
-from ft4fttsim.ethernet import Ethernet
 
 
 MINIMUM_ETHERNET_FRAME_SIZE = 64

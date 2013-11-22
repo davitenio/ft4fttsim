@@ -1,8 +1,7 @@
 # author: David Gessner <davidges@gmail.com>
 
 from unittest.mock import sentinel, Mock
-from ft4fttsim.networking import Switch, Message
-from ft4fttsim.ethernet import Ethernet
+from ft4fttsim.networking import Switch, Message, Ethernet
 import pytest
 
 
