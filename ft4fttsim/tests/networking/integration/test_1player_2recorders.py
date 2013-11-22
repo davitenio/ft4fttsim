@@ -17,20 +17,6 @@ from ft4fttsim.tests.networking.fixturehelper import make_link
 
 
 @pytest.fixture
-def recorder1(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder1", 1)
-    return recorder
-
-
-@pytest.fixture
-def recorder2(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder2", 1)
-    return recorder
-
-
-@pytest.fixture
 def player(env):
     from ft4fttsim.networking import MessagePlaybackDevice
     player = MessagePlaybackDevice(env, "player", num_ports=2)

@@ -29,20 +29,6 @@ def switch4(env):
     return Switch(env, "switch4", num_ports=4)
 
 
-@pytest.fixture
-def recorder1(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder1", 1)
-    return recorder
-
-
-@pytest.fixture
-def recorder2(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder2", 1)
-    return recorder
-
-
 @pytest.fixture(params=PLAYBACK_CONFIGS)
 def player1_r1(request, env, recorder1):
     """
