@@ -9,10 +9,10 @@ Test the following network:
 
 from ft4fttsim.networking import *
 import pytest
-from ft4fttsim.tests.fixturehelper import make_playback_device
-from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
-from ft4fttsim.tests.fixturehelper import make_link
-from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
+from ft4fttsim.tests.networking.fixturehelper import make_playback_device
+from ft4fttsim.tests.networking.fixturehelper import PLAYBACK_CONFIGS
+from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
 
 @pytest.fixture(params=LINK_CONFIGS)

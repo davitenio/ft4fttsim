@@ -8,8 +8,8 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.tests.fixturehelper import make_link
-from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
+from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
 
 @pytest.fixture(params=LINK_CONFIGS)
