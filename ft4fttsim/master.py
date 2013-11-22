@@ -76,7 +76,7 @@ class Master(NetworkDevice):
     def process_received_messages(self, messages):
         for m in messages:
             if m.message_type == Message.Type.UPDATE_REQUEST:
-                process_update_request_message(m)
+                self.process_update_request_message(m)
 
     def broadcast_trigger_message(self):
         log.debug("{} broadcasting trigger message".format(self))
