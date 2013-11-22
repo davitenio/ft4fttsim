@@ -33,7 +33,7 @@ def recorder(env):
 
 @pytest.fixture(params=range(4))
 def master(request, env, recorder):
-    from ft4fttsim.master import Master
+    from ft4fttsim.ft4ftt import Master
     # number of trigger messages per elementary cycle
     num_TMs_per_EC = request.param
     # configured elementary cycle duration in microseconds

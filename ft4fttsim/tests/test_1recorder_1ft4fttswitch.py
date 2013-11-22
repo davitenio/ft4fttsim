@@ -13,13 +13,13 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.master import Master, SyncStreamConfig
+from ft4fttsim.ft4ftt import Master, SyncStreamConfig
 from ft4fttsim.networking import Message
 
 
 @pytest.fixture
 def switch(env, master, recorder):
-    from ft4fttsim.ft4fttswitch import FT4FTTSwitch
+    from ft4fttsim.ft4ftt import FT4FTTSwitch
     from ft4fttsim.networking import Link
     new_switch = FT4FTTSwitch(env, "FT4FTT switch", 1, master)
     Link(env, recorder.ports[0], new_switch.ports[0], 100, 5)

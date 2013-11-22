@@ -13,7 +13,7 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.master import Master, SyncStreamConfig
+from ft4fttsim.ft4ftt import Master, SyncStreamConfig, MessageType
 from ft4fttsim.networking import Message
 
 
@@ -26,7 +26,7 @@ def master(env):
 @pytest.fixture
 def update_request_message(env, master):
     from unittest.mock import sentinel
-    from ft4fttsim.master import SyncStreamConfig
+    from ft4fttsim.ft4ftt import SyncStreamConfig
     from ft4fttsim.networking import Message
     new_sync_config = SyncStreamConfig(
         transmission_time_ECs=1,
@@ -36,7 +36,7 @@ def update_request_message(env, master):
     )
     update_request_data = ("synchronous stream 1", new_sync_config)
     new_update_request_message = Message(
-        env, sentinel.dummy_source, master, 1234, Message.Type.UPDATE_REQUEST,
+        env, sentinel.dummy_source, master, 1234, MessageType.UPDATE_REQUEST,
         update_request_data)
     return new_update_request_message
 
@@ -56,7 +56,7 @@ def player(env, update_request_message):
 
 @pytest.fixture
 def switch(env, master, player):
-    from ft4fttsim.ft4fttswitch import FT4FTTSwitch
+    from ft4fttsim.ft4ftt import FT4FTTSwitch
     from ft4fttsim.networking import Link
     new_switch = FT4FTTSwitch(env, "FT4FTT switch", 1, master)
     Link(env, player.ports[0], new_switch.ports[0], 100, 5)
