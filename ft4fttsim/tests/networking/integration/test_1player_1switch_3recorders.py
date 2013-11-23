@@ -18,42 +18,7 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.tests.fixturehelper import PLAYBACK_CONFIGS
-from ft4fttsim.tests.fixturehelper import make_playback_device
-from ft4fttsim.tests.fixturehelper import make_link
-
-
-@pytest.fixture
-def recorder1(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder1", 1)
-    return recorder
-
-
-@pytest.fixture
-def recorder2(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder2", 1)
-    return recorder
-
-
-@pytest.fixture
-def recorder3(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder3", 1)
-    return recorder
-
-
-@pytest.fixture(params=PLAYBACK_CONFIGS)
-def player_rec13(request, env, recorder1, recorder3):
-    """
-    Create a message playback device that sends messages to recorder 1 and 3.
-
-    """
-    config = request.param
-    new_playback_device = make_playback_device(
-        config, env, [recorder1, recorder3])
-    return new_playback_device
+from ft4fttsim.tests.networking.fixturehelper import make_link
 
 
 @pytest.fixture

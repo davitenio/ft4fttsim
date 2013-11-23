@@ -8,8 +8,14 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.tests.fixturehelper import make_link
-from ft4fttsim.tests.fixturehelper import LINK_CONFIGS
+from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
+
+
+@pytest.fixture
+def switch2(env):
+    from ft4fttsim.networking import Switch
+    return Switch(env, "switch", 2)
 
 
 @pytest.fixture(params=LINK_CONFIGS)
@@ -26,25 +32,6 @@ def link2(env, request, switch2, recorder):
     new_link = make_link(config, env, switch2.ports[1],
                          recorder.ports[0])
     return new_link
-
-
-@pytest.fixture
-def recorder(env):
-    from ft4fttsim.networking import MessageRecordingDevice
-    recorder = MessageRecordingDevice(env, "recorder", 1)
-    return recorder
-
-
-@pytest.fixture(params=range(4))
-def master(request, env, recorder):
-    from ft4fttsim.masterslave import Master
-    # number of trigger messages per elementary cycle
-    num_TMs_per_EC = request.param
-    # configured elementary cycle duration in microseconds
-    EC_duration_us = 10 ** 9
-    new_master = Master(env, "master", 1, [recorder], EC_duration_us,
-                        num_TMs_per_EC)
-    return new_master
 
 
 @pytest.mark.usefixtures("link1", "link2")

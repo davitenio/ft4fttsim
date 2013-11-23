@@ -1,10 +1,39 @@
 # author: David Gessner <davidges@gmail.com>
 
+
 import simpy
-from ft4fttsim.ethernet import Ethernet
 from ft4fttsim.exceptions import FT4FTTSimException
 from ft4fttsim.simlogging import log
 import collections
+
+
+class Ethernet:
+    # All lengths are indicated in bytes
+
+    # Ethernet IEEE 802.3 preamble length
+    PREAMBLE_SIZE_BYTES = 7
+    # Ethernet IEEE 802.3 start of frame delimiter length
+    SFD_SIZE_BYTES = 1
+    # Length of a source or destination address field
+    MAC_ADDRESS_SIZE_BYTES = 6
+    # Length of the ethertype field
+    ETHERTYPE_SIZE_BYTES = 2
+    # Length of the frame check sequence
+    FCS_SIZE_BYTES = 4
+    # Ethernet interframe gap length
+    IFG_SIZE_BYTES = 12
+    # minimum payload length
+    MIN_PAYLOAD_SIZE_BYTES = 46
+    # minimum frame length
+    MIN_FRAME_SIZE_BYTES = (
+        2 * MAC_ADDRESS_SIZE_BYTES + ETHERTYPE_SIZE_BYTES +
+        MIN_PAYLOAD_SIZE_BYTES + FCS_SIZE_BYTES)
+    # maximum payload length
+    MAX_PAYLOAD_SIZE_BYTES = 1500
+    # maximum frame length
+    MAX_FRAME_SIZE_BYTES = (
+        2 * MAC_ADDRESS_SIZE_BYTES + ETHERTYPE_SIZE_BYTES +
+        MAX_PAYLOAD_SIZE_BYTES + FCS_SIZE_BYTES)
 
 
 class Port:
@@ -38,9 +67,12 @@ class Port:
         self.device = device
         # indicates whether the port is already connected to a link
         self.is_free = True
+        previous_ports = getattr(device, "ports", [])
+        # Used within __repr__
+        self.port_number = len(previous_ports)
 
     def __repr__(self):
-        return "{}-port{}".format(self.device, id(self))
+        return "{}-port{}".format(self.device, self.port_number)
 
 
 class Link:
@@ -419,15 +451,25 @@ class MessagePlaybackAndRecordingDevice(
 
 class Switch(NetworkDevice):
     """
-    Class whose instances model Ethernet switches.
+    Class whose instances model standard Ethernet switches.
 
     """
 
     def __init__(self, env, name, num_ports, forwarding_table={}):
+        """
+        Creates a new Switch instance.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the new switch instance.
+            num_ports: The number of ports that the new switch instance should
+                have.
+            forwarding_table: Dictionary whose keys are network devices and
+                whose values are ports of the Switch instance.
+
+        """
         NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.listen_for_messages(self.forward_messages))
-        # Dictionary whose keys are network devices and whose values are ports
-        # of the Switch instance.
         self.forwarding_table = forwarding_table
 
     def forward_messages(self, message_list):
@@ -482,7 +524,9 @@ class Message:
     # next available ID for message objects
     next_ID = 0
 
-    def __init__(self, env, source, destination, size_bytes, message_type):
+    def __init__(
+            self, env, source, destination, size_bytes, message_type,
+            data=None):
         """
         Create an instance of Message.
 
@@ -499,6 +543,8 @@ class Message:
                 include the Ethernet preamble, the start of frame delimiter, or
                 an IEEE 802.1Q tag.
             message_type: models the Ethertype field.
+            data: The data to be carried within the message. It models the
+                Ethernet data field.
 
         """
         if not isinstance(size_bytes, int):
@@ -519,9 +565,10 @@ class Message:
         self.destination = destination
         self.size_bytes = size_bytes
         self.message_type = message_type
-        self.name = "({:03d}, {}, {}, {:d}, {})".format(
+        self.data = data
+        self.name = "({:03d}, {}, {}, {:d}, {}, {})".format(
             self.ID, self.source, self.destination, self.size_bytes,
-            self.message_type)
+            self.message_type, self.data)
         log.debug("{} created".format(self))
 
     @classmethod
@@ -535,7 +582,8 @@ class Message:
             template_message.source,
             template_message.destination,
             template_message.size_bytes,
-            template_message.message_type)
+            template_message.message_type,
+            template_message.data)
         return new_equivalent_message
 
     def __eq__(self, message):
@@ -547,10 +595,8 @@ class Message:
         return (self.source == message.source and
                 self.destination == message.destination and
                 self.size_bytes == message.size_bytes and
-                self.message_type == message.message_type)
-
-    def is_trigger_message(self):
-        return self.message_type == "TM"
+                self.message_type == message.message_type and
+                self.data == message.data)
 
     def __str__(self):
         return self.name
