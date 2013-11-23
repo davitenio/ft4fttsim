@@ -61,18 +61,16 @@ class Port:
         def __repr__(self):
             return "{}-outQ{}".format(self.device, id(self))
 
-    def __init__(self, env, device):
+    def __init__(self, env, device, name):
         self.in_queue = Port.InputQueue(env, device)
         self.out_queue = Port.OutputQueue(env, device)
         self.device = device
         # indicates whether the port is already connected to a link
         self.is_free = True
-        previous_ports = getattr(device, "ports", [])
-        # Used within __repr__
-        self.port_number = len(previous_ports)
+        self.name = name
 
     def __repr__(self):
-        return "{}-port{}".format(self.device, self.port_number)
+        return self.name
 
 
 class Link:
@@ -255,7 +253,7 @@ class NetworkDevice:
 
     def __init__(self, env, name, num_ports):
         self.env = env
-        self.ports = [Port(self.env, self)
+        self.ports = [Port(self.env, self, "{}-port{}".format(name, i))
                       for i in range(num_ports)]
         self.name = name
 

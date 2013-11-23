@@ -149,7 +149,7 @@ class FT4FTTSwitch(NetworkDevice):
                 "An embedded master must have exactly one port")
         NetworkDevice.__init__(self, env, name, num_ports)
         # Port leading to the embedded master.
-        self.internal_port = Port(env, self)
+        self.internal_port = Port(env, self, name + "-internalport")
         # All ports of the switch.
         self.ports.append(self.internal_port)
         # Ports leading to devices other than the embedded master.
