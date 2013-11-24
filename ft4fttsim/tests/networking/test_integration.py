@@ -4,7 +4,7 @@ from unittest.mock import sentinel, Mock
 
 import pytest
 
-from ft4fttsim.networking import *
+from ft4fttsim.networking import Link, NetworkDevice, Port
 
 
 @pytest.fixture

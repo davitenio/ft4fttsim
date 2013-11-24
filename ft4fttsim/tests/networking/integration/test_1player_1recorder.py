@@ -10,7 +10,8 @@ Test the following network:
 
 import pytest
 
-from ft4fttsim.networking import *
+from ft4fttsim.networking import Message, Ethernet, MessagePlaybackDevice
+from ft4fttsim.networking import MessageRecordingDevice, Link
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
