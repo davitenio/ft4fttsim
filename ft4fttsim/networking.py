@@ -1,10 +1,11 @@
 # author: David Gessner <davidges@gmail.com>
 
+import collections
 
 import simpy
+
 from ft4fttsim.exceptions import FT4FTTSimException
 from ft4fttsim.simlogging import log
-import collections
 
 
 class Ethernet:
@@ -478,6 +479,7 @@ class Switch(NetworkDevice):
         implemented as creating a new message instance based on the message
         in the first port, and transmitting the new message instance on the
         second port.
+
         """
 
         def find_ports(destination):

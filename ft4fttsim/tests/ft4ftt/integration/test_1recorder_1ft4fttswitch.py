@@ -13,6 +13,7 @@ Perform tests under the following network:
 """
 
 import pytest
+
 from ft4fttsim.ft4ftt import Master, SyncStreamConfig
 from ft4fttsim.networking import Message
 
@@ -32,6 +33,7 @@ def test_num_ECs_simulated__record_correct_number_of_messages(
     """
     Test that the recorder records master.num_TMs_per_EC trigger messages in
     each elementary cycle.
+
     """
     env.run(until=num_ECs * switch.master.EC_duration_us)
     received_messages = recorder.recorded_messages

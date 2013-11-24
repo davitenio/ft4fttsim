@@ -9,9 +9,11 @@ Perform tests under the following network:
 +--------+       |        | link2  +-----------+
                  |        2 -----> 0 recorder2 |
                  +--------+        +-----------+
+
 """
 
 import pytest
+
 from ft4fttsim.tests.networking.fixturehelper import make_link
 
 

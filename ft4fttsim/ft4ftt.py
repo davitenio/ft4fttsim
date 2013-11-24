@@ -1,9 +1,11 @@
 # author: David Gessner <davidges@gmail.com>
 
+from collections import namedtuple
+
 import simpy
+
 from ft4fttsim.networking import NetworkDevice, Message, Ethernet
 from ft4fttsim.simlogging import log
-from collections import namedtuple
 from ft4fttsim.networking import NetworkDevice, Port, Link, Message
 from ft4fttsim.exceptions import FT4FTTSimException
 

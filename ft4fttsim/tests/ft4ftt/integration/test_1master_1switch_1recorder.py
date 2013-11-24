@@ -5,9 +5,11 @@ Perform tests under the following network:
 +--------+ link1 +---------+ link2 +----------+
 | master | ----> | switch2 | ----> | recorder |
 +--------+       +---------+       +----------+
+
 """
 
 import pytest
+
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
