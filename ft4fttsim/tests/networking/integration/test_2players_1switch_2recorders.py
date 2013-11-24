@@ -50,6 +50,7 @@ def test_recorder1_receives_messages_from_player_rec1(
         env, player_rec1, recorder1):
     """
     Test recorder1 receives only the messages from player_rec1.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder1.recorded_messages
@@ -61,6 +62,7 @@ def test_recorder2_does_not_receive_messages_from_player_rec1(
         env, player_rec1, recorder2):
     """
     Test recorder2 does not receive the messages from player_rec1.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder2.recorded_messages
@@ -74,6 +76,7 @@ def test_recorder2_receives_messages_from_player2_rec2(
         env, player2_rec2, recorder2):
     """
     Test recorder2 receives only the messages from player2_rec2.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder2.recorded_messages
@@ -85,6 +88,7 @@ def test_recorder1_does_not_receive_messages_from_player2_rec2(
         env, player2_rec2, recorder1):
     """
     Test recorder1 does not receive the messages from player2_rec2.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder1.recorded_messages
@@ -118,6 +122,7 @@ def test_recorder1_receives_all_messages_from_player_rec1(
         env, player_rec1, recorder1):
     """
     Test recorder1 receives all messages from player_rec1.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder1.recorded_messages
@@ -132,6 +137,7 @@ def test_recorder2_receives_exactly_0_messages(
         env, recorder2):
     """
     Test recorder2 receives exactly zero messages.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder2.recorded_messages
@@ -143,6 +149,7 @@ def test_recorder1_receives_all_messages_from_player2_rec1(
         env, player2_rec1, recorder1):
     """
     Test recorder1 receives all messages from player2_rec1.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder1.recorded_messages

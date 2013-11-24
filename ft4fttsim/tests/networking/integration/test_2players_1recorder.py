@@ -80,6 +80,7 @@ def test_recorder_receives_all_messages_from_player0(
         env, player0, recorder):
     """
     Test recorder receives all messages from player0.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder.recorded_messages
@@ -97,6 +98,7 @@ def test_recorder_receives_all_messages_from_player1(
         env, player1, recorder):
     """
     Test recorder receives all messages from player1.
+
     """
     env.run(until=float("inf"))
     received_messages = recorder.recorded_messages

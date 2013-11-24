@@ -479,6 +479,7 @@ class Switch(NetworkDevice):
         implemented as creating a new message instance based on the message
         in the first port, and transmitting the new message instance on the
         second port.
+
         """
 
         def find_ports(destination):
