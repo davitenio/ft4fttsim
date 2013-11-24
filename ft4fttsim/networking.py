@@ -1,10 +1,11 @@
 # author: David Gessner <davidges@gmail.com>
 
+import collections
 
 import simpy
+
 from ft4fttsim.exceptions import FT4FTTSimException
 from ft4fttsim.simlogging import log
-import collections
 
 
 class Ethernet:

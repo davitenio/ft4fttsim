@@ -1,7 +1,8 @@
 # author: David Gessner <davidges@gmail.com>
 
-import simpy
 import logging
+
+import simpy
 
 
 # Instance of simpy.Environment to use to timestamp logging entries.

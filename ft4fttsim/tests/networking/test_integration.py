@@ -1,7 +1,9 @@
 # author: David Gessner <davidges@gmail.com>
 
-import pytest
 from unittest.mock import sentinel, Mock
+
+import pytest
+
 from ft4fttsim.networking import *
 
 

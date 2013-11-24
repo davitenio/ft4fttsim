@@ -18,6 +18,7 @@ Execute tests under the following network:
 """
 
 import pytest
+
 from ft4fttsim.tests.networking.fixturehelper import PLAYBACK_CONFIGS
 from ft4fttsim.tests.networking.fixturehelper import make_playback_device
 from ft4fttsim.tests.networking.fixturehelper import make_link

@@ -1,5 +1,7 @@
 # author: David Gessner <davidges@gmail.com>
 
+from ft4fttsim.networking import MessagePlaybackDevice, Message, Link
+
 
 PLAYBACK_CONFIGS = [
     "single message t0",
@@ -8,9 +10,6 @@ PLAYBACK_CONFIGS = [
     "8 messages",
     "3 batches of 2 messages",
 ]
-
-
-from ft4fttsim.networking import MessagePlaybackDevice
 
 
 def make_playback_device(
@@ -32,7 +31,6 @@ def make_playback_device(
             instance of a subclass of MessagePlaybackDevice.
 
     """
-    from ft4fttsim.networking import Message
     player = cls(env, name, 1)
     port = player.ports[0]
     if config == "single message t0":
@@ -130,7 +128,6 @@ LINK_CONFIGS = [(10, 3), (100, 0), (1000, 9)]
 
 
 def make_link(config, env, port1, port2):
-    from ft4fttsim.networking import Link
     Mbps, delay = config
     return Link(env, port1, port2, megabits_per_second=Mbps,
                 propagation_delay_us=delay)

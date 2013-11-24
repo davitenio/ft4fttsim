@@ -8,8 +8,9 @@ Test the following network:
 
 """
 
-from ft4fttsim.networking import *
 import pytest
+
+from ft4fttsim.networking import *
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 

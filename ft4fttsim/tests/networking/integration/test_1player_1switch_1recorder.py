@@ -10,6 +10,7 @@ Execute tests under the following network:
 
 
 import pytest
+
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
