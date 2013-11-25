@@ -52,40 +52,14 @@ class Port:
     messages that are received through the port are queued. The output queue is
     where messages that are to be transmitted through the port are queued.
 
+    Input queues are modeled as simpy stores with infinite capacity. The
+    waiting time in an input queue is therefore always zero for any message.
+    That is, a message received in an input queue does not suffer any queuing
+    delay. Output queues, on the other hand, are modeled by a simpy store with
+    capacity 1. This means that messages transmitted through the output queue
+    may suffer a queuing delay.
+
     """
-
-    class InputQueue(simpy.Store):
-        """
-        Input queue of a Port instance.
-
-        Since the queue is modeled as a simpy store with infinite capacity, the
-        waiting time in an input queue is always zero for any message. That is,
-        a message received in an input queue does not suffer any queuing delay.
-
-        """
-
-        def __init__(self, env, device):
-            simpy.Store.__init__(self, env)
-
-        def __repr__(self):
-            return "{}-inQ".format(self.device)
-
-    class OutputQueue(simpy.Store):
-        """
-        Output queue of a Port instance.
-
-        The queue is modeled by a simpy store with capacity 1. This means that
-        messages transmitted through the output queue may suffer a queuing
-        delay.
-
-        """
-
-        def __init__(self, env, device):
-            simpy.Store.__init__(self, env, capacity=1)
-            self.device = device
-
-        def __repr__(self):
-            return "{}-outQ{}".format(self.device, id(self))
 
     def __init__(self, env, device, name):
         """
@@ -97,8 +71,8 @@ class Port:
             name: A string used to identify the Port instance.
 
         """
-        self.in_queue = Port.InputQueue(env, device)
-        self.out_queue = Port.OutputQueue(env, device)
+        self.in_queue = simpy.Store(env)
+        self.out_queue = simpy.Store(env, capacity=1)
         self.device = device
         # indicates whether the port is already connected to a link
         self.is_free = True
