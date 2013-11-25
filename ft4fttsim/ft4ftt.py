@@ -99,9 +99,9 @@ class Master(NetworkDevice):
             self.sync_requirements[stream_id] = new_sync_stream_config
 
     def process_received_messages(self, messages):
-        for m in messages:
-            if m.message_type == MessageType.UPDATE_REQUEST:
-                self.process_update_request_message(m)
+        for msg in messages:
+            if msg.message_type == MessageType.UPDATE_REQUEST:
+                self.process_update_request_message(msg)
 
     def broadcast_trigger_message(self):
         log.debug("{} broadcasting trigger message".format(self))
@@ -165,12 +165,12 @@ class FT4FTTSwitch(NetworkDevice):
                 self.instruct_transmission(message, port))
 
     def process_received_messages(self, messages):
-        for m in messages:
-            if m.destination == self.master:
+        for msg in messages:
+            if msg.destination == self.master:
                 self.env.process(
-                    self.instruct_transmission(m, self.internal_port))
-            elif m.message_type == MessageType.TRIGGER_MESSAGE:
-                self.flood_message(m)
+                    self.instruct_transmission(msg, self.internal_port))
+            elif msg.message_type == MessageType.TRIGGER_MESSAGE:
+                self.flood_message(msg)
 
 
 # TODO: update this class.  It is currently obsolete.
