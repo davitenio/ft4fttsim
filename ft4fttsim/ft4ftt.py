@@ -3,8 +3,9 @@
 from collections import namedtuple
 
 from ft4fttsim.simlogging import log
-from ft4fttsim.networking import Ethernet, NetworkDevice, Port, Link, Message
+from ft4fttsim.networking import NetworkDevice, Port, Link, Message
 from ft4fttsim.exceptions import FT4FTTSimException
+import ft4fttsim.ethernet as ethernet
 
 
 class MessageType:
@@ -106,7 +107,7 @@ class Master(NetworkDevice):
         log.debug("{} broadcasting trigger message".format(self))
         for port in self.ports:
             trigger_message = Message(self.env, self, self.slaves,
-                                      Ethernet.MAX_FRAME_SIZE_BYTES,
+                                      ethernet.MAX_FRAME_SIZE_BYTES,
                                       MessageType.TRIGGER_MESSAGE)
             log.debug(
                 "{} instruct transmission of trigger message".format(self))
@@ -193,7 +194,7 @@ class Slave(NetworkDevice):
             # TODO: decide who each message should be transmitted to. For now
             # we simply send it to ourselves.
             new_message = Message(self.env, self, [self],
-                                  Ethernet.MAX_FRAME_SIZE_BYTES, "sync")
+                                  ethernet.MAX_FRAME_SIZE_BYTES, "sync")
             # order the transmission of the message on the specified links
             for outlink in links:
                 self.instruct_transmission(new_message, outlink)

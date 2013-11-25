@@ -8,37 +8,9 @@ import collections
 
 import simpy
 
+import ft4fttsim.ethernet as ethernet
 from ft4fttsim.exceptions import FT4FTTSimException
 from ft4fttsim.simlogging import log
-
-
-class Ethernet:
-    # All lengths are indicated in bytes
-
-    # Ethernet IEEE 802.3 preamble length
-    PREAMBLE_SIZE_BYTES = 7
-    # Ethernet IEEE 802.3 start of frame delimiter length
-    SFD_SIZE_BYTES = 1
-    # Length of a source or destination address field
-    MAC_ADDRESS_SIZE_BYTES = 6
-    # Length of the ethertype field
-    ETHERTYPE_SIZE_BYTES = 2
-    # Length of the frame check sequence
-    FCS_SIZE_BYTES = 4
-    # Ethernet interframe gap length
-    IFG_SIZE_BYTES = 12
-    # minimum payload length
-    MIN_PAYLOAD_SIZE_BYTES = 46
-    # minimum frame length
-    MIN_FRAME_SIZE_BYTES = (
-        2 * MAC_ADDRESS_SIZE_BYTES + ETHERTYPE_SIZE_BYTES +
-        MIN_PAYLOAD_SIZE_BYTES + FCS_SIZE_BYTES)
-    # maximum payload length
-    MAX_PAYLOAD_SIZE_BYTES = 1500
-    # maximum frame length
-    MAX_FRAME_SIZE_BYTES = (
-        2 * MAC_ADDRESS_SIZE_BYTES + ETHERTYPE_SIZE_BYTES +
-        MAX_PAYLOAD_SIZE_BYTES + FCS_SIZE_BYTES)
 
 
 class Port:
@@ -224,8 +196,8 @@ class _Sublink:
             message = yield new_message_request
             log.debug("{} transmission of {} started".format(self, message))
             # wait for the transmission + propagation time to elapse
-            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
-                                 Ethernet.SFD_SIZE_BYTES +
+            bytes_to_transmit = (ethernet.PREAMBLE_SIZE_BYTES +
+                                 ethernet.SFD_SIZE_BYTES +
                                  message.size_bytes)
             yield self.env.timeout(
                 self.link.transmission_time_us(bytes_to_transmit) +
@@ -234,7 +206,7 @@ class _Sublink:
             self.receiver_port.in_queue.put(message)
             # wait for the duration of the ethernet interframe gap to elapse
             yield self.env.timeout(
-                self.link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
+                self.link.transmission_time_us(ethernet.IFG_SIZE_BYTES))
             log.debug("{} inter frame gap finished".format(self))
 
     def __repr__(self):
@@ -551,11 +523,11 @@ class Message:
         """
         if not isinstance(size_bytes, int):
             raise FT4FTTSimException("Message size must be integer")
-        if not (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
-                Ethernet.MAX_FRAME_SIZE_BYTES):
+        if not (ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
+                ethernet.MAX_FRAME_SIZE_BYTES):
             raise FT4FTTSimException(
                 "Message size must be between {} and {}, but is {}".format(
-                Ethernet.MIN_FRAME_SIZE_BYTES, Ethernet.MAX_FRAME_SIZE_BYTES,
+                ethernet.MIN_FRAME_SIZE_BYTES, ethernet.MAX_FRAME_SIZE_BYTES,
                 size_bytes))
         self.env = env
         self.ID = Message.next_ID
