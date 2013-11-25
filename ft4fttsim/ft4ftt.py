@@ -125,7 +125,7 @@ class Master(NetworkDevice):
             self.ec_count += 1
             log.debug("{} starting EC ".format(self, self.ec_count))
             time_last_ec_start = self.env.now
-            for message_count in range(self.num_tms_per_ec):
+            for _ in range(self.num_tms_per_ec):
                 self.broadcast_trigger_message()
             # wait for the next elementary cycle to start
             while True:
