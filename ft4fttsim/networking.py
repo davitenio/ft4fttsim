@@ -135,8 +135,7 @@ class Link:
         122.08
 
         """
-        BITS_PER_BYTE = 8
-        bits_to_transmit = num_bytes * BITS_PER_BYTE
+        bits_to_transmit = num_bytes * 8
         transmission_time_us = (bits_to_transmit / self.megabits_per_second)
         return transmission_time_us
 
@@ -199,13 +198,13 @@ class _Sublink:
 
         """
         while True:
-            new_message_request = self.transmitter_port.out_queue.get()
-            message = yield new_message_request
+            get_request = self.transmitter_port.out_queue.get()
+            message = yield get_request
             log.debug("{} transmission of {} started".format(self, message))
-            # wait for the transmission + propagation time to elapse
             bytes_to_transmit = (ethernet.PREAMBLE_SIZE_BYTES +
                                  ethernet.SFD_SIZE_BYTES +
                                  message.size_bytes)
+            # wait for the transmission + propagation time to elapse
             yield self.env.timeout(
                 self.link.transmission_time_us(bytes_to_transmit) +
                 self.link.propagation_delay_us)
@@ -217,10 +216,10 @@ class _Sublink:
             log.debug("{} inter frame gap finished".format(self))
 
     def __repr__(self):
-        return "{}->{}".format(self._transmitter_port, self._receiver_port)
+        return "{}->{}".format(self.transmitter_port, self.receiver_port)
 
     def __str__(self):
-        return "{}->{}".format(self._transmitter_port, self._receiver_port)
+        return "{}->{}".format(self.transmitter_port, self.receiver_port)
 
 
 class NetworkDevice:
@@ -393,8 +392,8 @@ class EchoDevice(NetworkDevice):
             messages: An iterable of the messages to transmit.
 
         """
-        for m in messages:
-            self.env.process(self.instruct_transmission(m, self.ports[0]))
+        for msg in messages:
+            self.env.process(self.instruct_transmission(msg, self.ports[0]))
 
 
 class MessageRecordingDevice(NetworkDevice):
@@ -609,8 +608,8 @@ class Message:
     Class for messages that model Ethernet frames.
 
     """
-    # next available ID for message objects
-    next_ID = 0
+    # next available identifier for message objects
+    next_identifier = 0
 
     def __init__(
             self, env, source, destination, size_bytes, message_type,
@@ -644,8 +643,8 @@ class Message:
                 ethernet.MIN_FRAME_SIZE_BYTES, ethernet.MAX_FRAME_SIZE_BYTES,
                 size_bytes))
         self.env = env
-        self.ID = Message.next_ID
-        Message.next_ID += 1
+        self._identifier = Message.next_identifier
+        Message.next_identifier += 1
         # source of the message. Models the source MAC address.
         self.source = source
         # destination of the message. It models the destination MAC address. It
@@ -655,9 +654,17 @@ class Message:
         self.message_type = message_type
         self.data = data
         self.name = "({:03d}, {}, {}, {:d}, {}, {})".format(
-            self.ID, self.source, self.destination, self.size_bytes,
+            self.identifier, self.source, self.destination, self.size_bytes,
             self.message_type, self.data)
         log.debug("{} created".format(self))
+
+    @property
+    def identifier(self):
+        """
+        Integer that uniquely identifies the Message instance.
+
+        """
+        return self._identifier
 
     @classmethod
     def from_message(cls, template_message):
@@ -677,7 +684,7 @@ class Message:
     def __eq__(self, message):
         """
         Returns true if self and message are identical except for the message
-        ID.
+        identifier.
 
         """
         return (self.source == message.source and
