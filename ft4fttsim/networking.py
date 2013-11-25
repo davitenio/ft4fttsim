@@ -13,7 +13,7 @@ from ft4fttsim.exceptions import FT4FTTSimException
 from ft4fttsim.simlogging import log
 
 
-class Port:
+class Port(object):
     """
     Models physical Ethernet ports.
 
@@ -52,7 +52,7 @@ class Port:
         return self.name
 
 
-class Link:
+class Link(object):
     """
     Models links used in an Ethernet network.
 
@@ -140,7 +140,7 @@ class Link:
         return transmission_time_us
 
 
-class _Sublink:
+class _Sublink(object):
     """
     Models a directional sublink of a Link.
 
@@ -222,7 +222,7 @@ class _Sublink:
         return "{}->{}".format(self.transmitter_port, self.receiver_port)
 
 
-class NetworkDevice:
+class NetworkDevice(object):
     """
     Models generic network devices.
 
@@ -603,7 +603,7 @@ class Switch(NetworkDevice):
                     self.instruct_transmission(new_message, port))
 
 
-class Message:
+class Message(object):
     """
     Class for messages that model Ethernet frames.
 

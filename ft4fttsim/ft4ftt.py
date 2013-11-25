@@ -8,7 +8,7 @@ from ft4fttsim.exceptions import FT4FTTSimException
 import ft4fttsim.ethernet as ethernet
 
 
-class MessageType:
+class MessageType(object):
     """
     Class used as an enumeration type for different types of FTT messages.
 
