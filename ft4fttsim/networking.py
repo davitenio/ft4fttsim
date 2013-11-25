@@ -33,19 +33,17 @@ class Port:
 
     """
 
-    def __init__(self, env, device, name):
+    def __init__(self, env, name):
         """
         Constructor for Port instances.
 
         Arguments:
             env: A simpy.Environment instance.
-            device: The NetworkDevice instance of which the port is a part of.
             name: A string used to identify the Port instance.
 
         """
         self.in_queue = simpy.Store(env)
         self.out_queue = simpy.Store(env, capacity=1)
-        self.device = device
         # indicates whether the port is already connected to a link
         self.is_free = True
         self.name = name
@@ -220,7 +218,7 @@ class NetworkDevice:
 
     def __init__(self, env, name, num_ports):
         self.env = env
-        self.ports = [Port(self.env, self, "{}-port{}".format(name, i))
+        self.ports = [Port(self.env, "{}-port{}".format(name, i))
                       for i in range(num_ports)]
         self.name = name
 
