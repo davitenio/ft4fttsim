@@ -1,6 +1,6 @@
 # author: David Gessner <davidges@gmail.com>
 """
-This module provides classes to define an ethernet network to be simulated.
+This module provides classes to define a simulated ethernet network.
 
 """
 
@@ -56,10 +56,10 @@ class Link:
     """
     Models links used in an Ethernet network.
 
-    A Link object models a physical link between exactly 2 network device ports
-    (objects of class Port). A Link object has a certain transmission speed
-    (expressed in megabits per second) and propagation delay (expressed in
-    microseconds).
+    A Link object models a bidirectional physical link between exactly 2
+    network device ports (objects of class Port). A Link object has a certain
+    transmission speed (expressed in megabits per second) and propagation delay
+    (expressed in microseconds).
 
     """
     def __init__(
@@ -145,14 +145,15 @@ class _Sublink:
     """
     Models a directional sublink of a Link.
 
-    Link instances are bidirectional and comprised of 2 _Sublinks each, one for
-    each direction. This means that _Sublinks are directional, i.e., they have
-    a single transmitter and a single receiver port. Messages that are being
-    modeled as being transmitted can only be transmitted from the transmitter
-    to the receiver port, but not in the opposite direction. At any one time at
-    most one message can be transmitted through a _Sublink. If the transmission
-    of additional messages is ordered through the _Sublink, then they will be
-    queued.
+    Link instances are comprised of 2 _Sublinks each, one for each direction.
+    This means that _Sublinks are directional, i.e., they have a single
+    transmitter and a single receiver port. Messages that are being modeled as
+    being transmitted can only be transmitted from the transmitter to the
+    receiver port, but not in the opposite direction. At any one time at most
+    one message can be transmitted through a _Sublink. If the transmission of
+    additional messages is ordered through the _Sublink when it already
+    contains a message, then the additional messages will be queued in the
+    output queue of the transmitter port of that _Sublink.
 
     """
     def __init__(
@@ -178,10 +179,18 @@ class _Sublink:
 
     @property
     def transmitter_port(self):
+        """
+        The port that is at the transmitting end of the _Sublink.
+
+        """
         return self._transmitter_port
 
     @property
     def receiver_port(self):
+        """
+        The port that is at the receiving end of the _Sublink.
+
+        """
         return self._receiver_port
 
     def run(self):
@@ -215,8 +224,35 @@ class _Sublink:
 
 
 class NetworkDevice:
+    """
+    Models generic network devices.
+
+    A NetworkDevice instance models a generic network device with a certain
+    number of ethernet ports. Network devices can be interconnected by means of
+    links attached to their ports:
+
+    >>> env = simpy.Environment()
+    >>> d = NetworkDevice(env, "some device", 1)
+    >>> d2 = NetworkDevice(env, "another device", 1)
+    >>> L = Link(env, d.ports[0], d2.ports[0], 100, 3)
+
+    The main purpose of this class is to serve as the superclass for specific
+    network devices such as Switch, MessagePlaybackDevice,
+    MessageRecordingDevice, etc.
+
+    """
 
     def __init__(self, env, name, num_ports):
+        """
+        Constructor for NetworkDevice instances.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the NetworkDevice instance.
+            num_ports: The number of ports that the NetworkDevice instance
+                should have.
+
+        """
         self.env = env
         self.ports = [Port(self.env, "{}-port{}".format(name, i))
                       for i in range(num_ports)]
@@ -224,9 +260,29 @@ class NetworkDevice:
 
     def listen_for_messages(self, callback):
         """
-        Wait for the reception of messages on all ports and, once messages are
-        received, invoke the callback function passing the received messages as
-        a parameter.
+        Simpy process that calls callback when messages are received.
+
+        Arguments:
+            callback: The function to be called when one or more messages are
+                received. The function should accept a single parameter that is
+                the list of received messages.
+
+        Note that a simpy process is a generator function (a.k.a., co-routine).
+        It should therefore not be called directly. Instead, it should be
+        registered with a simpy environment using simpy.Environment().process
+
+        Example:
+
+        >>> class MyNetworkDevice(NetworkDevice):
+        ...     def __init__(self, env, name, num_ports):
+        ...         NetworkDevice.__init__(self, env, name, num_ports)
+        ...         env.process(self.listen_for_messages(self.hello))
+        ...     def hello(self, messages):
+        ...         for msg in messages:
+        ...             print("Hello message {}".format(msg))
+        ...
+        >>> env = simpy.Environment()
+        >>> d = MyNetworkDevice(env, "some device", 1)
 
         """
         # generate get requests for all input queues
@@ -262,9 +318,18 @@ class NetworkDevice:
 
     def instruct_transmission(self, message, port):
         """
-        Note that this is a generator function. It should not be called
-        directly, but only as a parameter to the process() method of a simpy
-        Environment instance.
+        Simpy process that transmits a given message through a given port.
+
+        Arguments:
+            message: Message instance to be transmitted.
+            port: Port of self through which to transmit the message.
+
+        Raises:
+            FT4FTTSimException if port is not an element of self.ports.
+
+        Note that instruct_transmission() is a generator function. It should
+        not be called directly, but only passed as a parameter to the process()
+        method of a simpy Environment instance.
 
         Example:
 
@@ -287,6 +352,10 @@ class NetworkDevice:
 
     @property
     def input_queues(self):
+        """
+        Returns a list of all the input queues of the NetworkDevice instance.
+
+        """
         return [port.in_queue for port in self.ports]
 
     def __str__(self):
@@ -297,41 +366,76 @@ class NetworkDevice:
 
 
 class EchoDevice(NetworkDevice):
+    """
+    Models a device that retransmits any message it receives.
+
+    Instances of this class are mainly used for testing purposes.
+
+    """
 
     def __init__(self, env, name):
+        """
+        Creates a new EchoDevice instance.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the EchoDevice instance.
+
+        """
         NetworkDevice.__init__(self, env, name, 1)
         self.env.process(self.listen_for_messages(self.echo))
 
     def echo(self, messages):
+        """
+        Transmits messages through port number 0 of self.
+
+        Arguments:
+            messages: An iterable of the messages to transmit.
+
+        """
         for m in messages:
             self.env.process(self.instruct_transmission(m, self.ports[0]))
 
 
 class MessageRecordingDevice(NetworkDevice):
     """
-    Class whose instances model a passive receiver.
-
-    Instances of this class cannot transmit messages. All they do is wait for
-    the reception of a message on any one of their ports and record the
-    received message in an internal buffer together with a timestamp of the
-    reception time.
+    Models receivers that record and timestamp each received message.
 
     The main purpose of instances of this class is to make testing easier.
 
     """
 
     def __init__(self, env, name, num_ports):
+        """
+        Create a new MessageRecordingDevice instance.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the MessageRecordingDevice
+                instance.
+            num_ports: The number of ports that the MessageRecordingDevice
+                instance should have.
+
+        """
         NetworkDevice.__init__(self, env, name, num_ports)
         self.reception_records = {}
         self.env.process(self.listen_for_messages(self.do_timestamp_messages))
 
     def do_timestamp_messages(self, messages):
+        """
+        Timestamp each message in messages with the current time.
+
+        """
         timestamp = self.env.now
         self.reception_records[timestamp] = messages
         log.debug("{} recorded {}".format(self, self.reception_records))
 
     @property
     def recorded_messages(self):
+        """
+        Return the messages so far received by self.
+
+        """
         messages = []
         for time in sorted(self.reception_records):
             messages.extend(self.reception_records[time])
@@ -339,6 +443,12 @@ class MessageRecordingDevice(NetworkDevice):
 
     @property
     def recorded_timestamps(self):
+        """
+        Return list of instants of time when messages have been received.
+
+        The list is sorted from earlier time instants to later time instants.
+
+        """
         return sorted(self.reception_records.keys())
 
 
@@ -346,10 +456,9 @@ class MessagePlaybackDevice(NetworkDevice):
     """
     Instances of this class model devices that transmit prespecified messages.
 
-    Instances of this class cannot receive messages. What they do is accept a
-    series of transmission commands and then execute them. Each transmission
-    command specifies what message to transmit at what time and through which
-    port.
+    Instances of this class accept a series of transmission commands and then
+    execute them. Each transmission command specifies what message to transmit,
+    at what time, and through which port.
 
     The main purpose of instances of this class is to make testing easier.
 
@@ -387,6 +496,10 @@ class MessagePlaybackDevice(NetworkDevice):
             self, self.transmission_commands))
 
     def run(self):
+        """
+        Simpy process that executes previously loaded transmission commands.
+
+        """
         for time in sorted(self.transmission_commands):
             delay_before_next_tx_order = time - self.env.now
             log.debug("{} waiting for next transmission time".format(self))
@@ -400,14 +513,17 @@ class MessagePlaybackDevice(NetworkDevice):
 
     @property
     def transmission_start_times(self):
+        """
+        Returns a list of time instants when transmissions will be instructed.
+
+        """
         return sorted(self.transmission_commands.keys())
 
 
 class MessagePlaybackAndRecordingDevice(
         MessagePlaybackDevice, MessageRecordingDevice):
     """
-    Models network devices that both transmit pre-specified messages and record
-    messages.
+    Models devices that transmit pre-specified messages and record messages.
 
     """
 
