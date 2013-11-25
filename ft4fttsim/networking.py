@@ -1,4 +1,8 @@
 # author: David Gessner <davidges@gmail.com>
+"""
+This module provides classes to define an ethernet network to be simulated.
+
+"""
 
 import collections
 
