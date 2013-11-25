@@ -20,11 +20,11 @@ Perform tests under the following network:
 import pytest
 
 from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.networking import Switch
 
 
 @pytest.fixture
 def switch_pr13(env, player_rec13, recorder1, recorder2, recorder3):
-    from ft4fttsim.networking import Switch
     new_switch = Switch(env, "switch4", num_ports=4)
     make_link((1000, 123), env, player_rec13.ports[0], new_switch.ports[0])
     make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])

@@ -2,11 +2,8 @@
 
 from collections import namedtuple
 
-import simpy
-
-from ft4fttsim.networking import NetworkDevice, Message, Ethernet
 from ft4fttsim.simlogging import log
-from ft4fttsim.networking import NetworkDevice, Port, Link, Message
+from ft4fttsim.networking import Ethernet, NetworkDevice, Port, Link, Message
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
@@ -19,6 +16,7 @@ class MessageType:
 
     Example:
 
+    >>> import simpy
     >>> env = simpy.Environment()
     >>> d1 = NetworkDevice(env, "some device", 1)
     >>> d2 = NetworkDevice(env, "another device", 1)

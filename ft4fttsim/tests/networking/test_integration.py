@@ -1,6 +1,6 @@
 # author: David Gessner <davidges@gmail.com>
 
-from unittest.mock import sentinel, Mock
+from unittest.mock import Mock
 
 import pytest
 

@@ -2,8 +2,6 @@
 
 import logging
 
-import simpy
-
 
 # Instance of simpy.Environment to use to timestamp logging entries.
 # Code using this module should set a value for this.

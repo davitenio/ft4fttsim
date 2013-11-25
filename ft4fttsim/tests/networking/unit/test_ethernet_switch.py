@@ -1,8 +1,8 @@
 # author: David Gessner <davidges@gmail.com>
 
 from unittest.mock import sentinel, Mock
+
 from ft4fttsim.networking import Switch, Message, Ethernet
-import pytest
 
 
 def test_forward_messages__no_outlinks__no_instruct_transmission(env):

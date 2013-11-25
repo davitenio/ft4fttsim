@@ -19,12 +19,12 @@ Execute tests under the following network:
 
 import pytest
 
+from ft4fttsim.networking import Switch
 from ft4fttsim.tests.networking.fixturehelper import make_link
 
 
 @pytest.fixture
 def switch3(env):
-    from ft4fttsim.networking import Switch
     return Switch(env, "switch3", num_ports=3)
 
 
