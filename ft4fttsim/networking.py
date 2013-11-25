@@ -236,38 +236,9 @@ class _Sublink:
     def transmitter_port(self):
         return self._transmitter_port
 
-    @transmitter_port.setter
-    def transmitter_port(self, port):
-        """
-        Set the port that will be transmitting through the sublink instance.
-
-        Arguments:
-            port: The port of the NetworkDevice instance to be set as the
-                transmitter port for the sublink.
-
-        """
-        if self._transmitter_port is not None:
-            raise FT4FTTSimException("Sublink already has a transmitter.")
-        self._transmitter_port = port
-
     @property
     def receiver_port(self):
         return self._receiver_port
-
-    @receiver_port.setter
-    def receiver_port(self, port):
-        """
-        Set the port that will be receiving the traffic through the sublink
-        instance.
-
-        Arguments:
-            port: The port of the NetworkDevice instance to be set as the
-                receiver port for the sublink.
-
-        """
-        if self._receiver_port is not None:
-            raise FT4FTTSimException("Sublink already has a receiver.")
-        self._receiver_port = port
 
     def run(self):
         """
