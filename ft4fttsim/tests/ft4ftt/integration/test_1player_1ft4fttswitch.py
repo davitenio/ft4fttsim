@@ -24,10 +24,10 @@ from ft4fttsim.ft4ftt import FT4FTTSwitch
 @pytest.fixture
 def update_request_message(env, master):
     new_sync_config = SyncStreamConfig(
-        transmission_time_ECs=1,
-        deadline_ECs=5,
-        period_ECs=20,
-        offset_ECs=123
+        transmission_time_ecs=1,
+        deadline_ecs=5,
+        period_ecs=20,
+        offset_ecs=123
     )
     update_request_data = ("synchronous stream 1", new_sync_config)
     new_update_request_message = Message(
@@ -57,5 +57,5 @@ def switch(env, master, player):
 
 @pytest.mark.usefixtures("switch")
 def test_update_request(env, master, update_request_message):
-    env.run(until=master.EC_duration_us * 1)
+    env.run(until=master.ec_duration_us * 1)
     assert master.sync_requirements == dict([update_request_message.data])

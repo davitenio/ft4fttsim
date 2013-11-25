@@ -36,7 +36,7 @@ SyncStreamConfig = namedtuple(
     'SyncStreamConfig',
     # The SyncStreamConfig parameters are expressed as integer multiples of the
     # Elementary Cycle duration.
-    'transmission_time_ECs, deadline_ECs, period_ECs, offset_ECs'
+    'transmission_time_ecs, deadline_ecs, period_ecs, offset_ecs'
 )
 
 
@@ -48,7 +48,7 @@ class Master(NetworkDevice):
 
     def __init__(
             self, env, name, num_ports, slaves, elementary_cycle_us,
-            num_TMs_per_EC=1, sync_requirements=None):
+            num_tms_per_ec=1, sync_requirements=None):
         """
         Constructor for FTT masters.
 
@@ -60,25 +60,25 @@ class Master(NetworkDevice):
             slaves: Slaves for which the master is responsible.
             elementary_cycle_us: Duration of the elementary cycles in
                 microseconds.
-            num_TMs_per_EC: Number of trigger messages to transmit per
+            num_tms_per_ec: Number of trigger messages to transmit per
                 elementary cycle.
             sync_requirements: A dictionary whose keys identify synchronous
                 stream configurations (i.e., instances of SyncStreamConfig) and
                 whose values are synchronous streams.
 
         """
-        assert isinstance(num_TMs_per_EC, int)
+        assert isinstance(num_tms_per_ec, int)
         NetworkDevice.__init__(self, env, name, num_ports)
         self.proc = env.process(self.run())
         self.slaves = slaves
-        self.EC_duration_us = elementary_cycle_us
-        self.num_TMs_per_EC = num_TMs_per_EC
+        self.ec_duration_us = elementary_cycle_us
+        self.num_tms_per_ec = num_tms_per_ec
         if sync_requirements is None:
             self.sync_requirements = {}
         else:
             self.sync_requirements = sync_requirements
         # This counter is incremented after each successive elementary cycle
-        self.EC_count = 0
+        self.ec_count = 0
         self.env.process(
             self.listen_for_messages(self.process_received_messages))
 
@@ -95,8 +95,8 @@ class Master(NetworkDevice):
 
     def process_update_request_message(self, message):
         if self.passes_admission_control(message):
-            stream_ID, new_sync_stream_config = message.data
-            self.sync_requirements[stream_ID] = new_sync_stream_config
+            stream_id, new_sync_stream_config = message.data
+            self.sync_requirements[stream_id] = new_sync_stream_config
 
     def process_received_messages(self, messages):
         for m in messages:
@@ -116,16 +116,16 @@ class Master(NetworkDevice):
 
     def run(self):
         while True:
-            self.EC_count += 1
-            log.debug("{} starting EC ".format(self, self.EC_count))
-            time_last_EC_start = self.env.now
-            for message_count in range(self.num_TMs_per_EC):
+            self.ec_count += 1
+            log.debug("{} starting EC ".format(self, self.ec_count))
+            time_last_ec_start = self.env.now
+            for message_count in range(self.num_tms_per_ec):
                 self.broadcast_trigger_message()
             # wait for the next elementary cycle to start
             while True:
-                time_since_EC_start = self.env.now - time_last_EC_start
-                delay_before_next_tx_order = float(self.EC_duration_us -
-                                                   time_since_EC_start)
+                time_since_ec_start = self.env.now - time_last_ec_start
+                delay_before_next_tx_order = float(self.ec_duration_us -
+                                                   time_since_ec_start)
                 if delay_before_next_tx_order > 0:
                     yield self.env.timeout(delay_before_next_tx_order)
                 else:

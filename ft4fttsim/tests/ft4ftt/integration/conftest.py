@@ -15,9 +15,9 @@ def recorder(env):
 @pytest.fixture(params=range(4))
 def master(request, env, recorder):
     # number of trigger messages per elementary cycle
-    num_TMs_per_EC = request.param
+    num_tms_per_ec = request.param
     # configured elementary cycle duration in microseconds
-    EC_duration_us = 10 ** 9
-    new_master = Master(env, "master", 1, [recorder], EC_duration_us,
-                        num_TMs_per_EC)
+    ec_duration_us = 10 ** 9
+    new_master = Master(env, "master", 1, [recorder], ec_duration_us,
+                        num_tms_per_ec)
     return new_master

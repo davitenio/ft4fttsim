@@ -37,13 +37,13 @@ def link2(env, request, switch2, recorder):
 
 
 @pytest.mark.usefixtures("link1", "link2")
-@pytest.mark.parametrize("num_ECs", range(1, 4))
-def test_num_ECs_simulated__record_correct_number_of_messages(
-        env, master, recorder, num_ECs):
+@pytest.mark.parametrize("num_ecs", range(1, 4))
+def test_num_ecs_simulated__record_correct_number_of_messages(
+        env, master, recorder, num_ecs):
     """
-    Test that the recorder records master.num_TMs_per_EC trigger messages in
+    Test that the recorder records master.num_tms_per_ec trigger messages in
     each elementary cycle.
     """
-    env.run(until=num_ECs * master.EC_duration_us)
+    env.run(until=num_ecs * master.ec_duration_us)
     received_messages = recorder.recorded_messages
-    assert len(received_messages) == num_ECs * master.num_TMs_per_EC
+    assert len(received_messages) == num_ecs * master.num_tms_per_ec
