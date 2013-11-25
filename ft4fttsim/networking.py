@@ -454,7 +454,7 @@ class Switch(NetworkDevice):
 
     """
 
-    def __init__(self, env, name, num_ports, forwarding_table={}):
+    def __init__(self, env, name, num_ports, forwarding_table=None):
         """
         Creates a new Switch instance.
 
@@ -469,7 +469,10 @@ class Switch(NetworkDevice):
         """
         NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.listen_for_messages(self.forward_messages))
-        self.forwarding_table = forwarding_table
+        if forwarding_table is None:
+            self.forwarding_table = {}
+        else:
+            self.forwarding_table = forwarding_table
 
     def forward_messages(self, message_list):
         """
