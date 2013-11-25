@@ -43,13 +43,26 @@ class Ethernet:
 
 class Port:
     """
-    Instances of this class model physical Ethernet ports. Instances of the
-    class NetworkDevice can have several such ports, and to each one of them an
-    instance of Link can be attached.
+    Models physical Ethernet ports.
+
+    Instances of class NetworkDevice can have several such ports, and to each
+    one of them an instance of Link can be attached.
+
+    Each port has an input queue and an output queue. The input queue is where
+    messages that are received through the port are queued. The output queue is
+    where messages that are to be transmitted through the port are queued.
 
     """
 
     class InputQueue(simpy.Store):
+        """
+        Input queue of a Port instance.
+
+        Since the queue is modeled as a simpy store with infinite capacity, the
+        waiting time in an input queue is always zero for any message. That is,
+        a message received in an input queue does not suffer any queuing delay.
+
+        """
 
         def __init__(self, env, device):
             simpy.Store.__init__(self, env)
@@ -58,6 +71,14 @@ class Port:
             return "{}-inQ".format(self.device)
 
     class OutputQueue(simpy.Store):
+        """
+        Output queue of a Port instance.
+
+        The queue is modeled by a simpy store with capacity 1. This means that
+        messages transmitted through the output queue may suffer a queuing
+        delay.
+
+        """
 
         def __init__(self, env, device):
             simpy.Store.__init__(self, env, capacity=1)
@@ -67,6 +88,15 @@ class Port:
             return "{}-outQ{}".format(self.device, id(self))
 
     def __init__(self, env, device, name):
+        """
+        Constructor for Port instances.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            device: The NetworkDevice instance of which the port is a part of.
+            name: A string used to identify the Port instance.
+
+        """
         self.in_queue = Port.InputQueue(env, device)
         self.out_queue = Port.OutputQueue(env, device)
         self.device = device
@@ -80,12 +110,12 @@ class Port:
 
 class Link:
     """
-    Class whose instances model links used in an Ethernet network.
+    Models links used in an Ethernet network.
 
-    A Link object models a physical link between at most 2 network devices
-    (objects of class NetworkDevice). A Link object has a certain transmission
-    speed (expressed in megabits per second) and propagation delay (expressed
-    in microseconds).
+    A Link object models a physical link between exactly 2 network device ports
+    (objects of class Port). A Link object has a certain transmission speed
+    (expressed in megabits per second) and propagation delay (expressed in
+    microseconds).
 
     """
     def __init__(
@@ -96,10 +126,12 @@ class Link:
         Create a new instance of class Link.
 
         Arguments:
-            port1: An instance of Port that will be attached to the link
-                instance.
-            port2: An instance of Port that will be attached to the link
-                instance.
+            env: A simpy.Environment instance.
+            port1: An instance of Port to which the link will be connected. It
+                models the port at one extreme of the modeled link.
+            port2: Another instance of Port to which the link will be
+                connected. It models the port at the other extreme of the
+                modeled link.
             megabits_per_second: Speed of the link in megabits per second.
             propagation_delay_us: Propagation delay of the link in
                 microseconds.
@@ -134,9 +166,17 @@ class Link:
 
     def transmission_time_us(self, num_bytes):
         """
-        Return the number of microseconds that it would take a transmitter to
-        transmit num_bytes on the link instance. This is the time from when the
-        first bit until the last bit has left the transmitter.
+        Gives the time in microseconds to transmit num_bytes on the link.
+
+        Arguments:
+            num_bytes: The number of bytes we want to know the transmission
+                time for.
+
+        Returns:
+            A floating-point number representing the number of microseconds
+            that it would take a Port attached to the link to transmit
+            num_bytes, counting from when the first bit until the last bit has
+            left the Port.
 
         Example:
 
@@ -159,12 +199,16 @@ class Link:
 
 class _Sublink:
     """
-    Sublinks are directional, i.e., they have a single transmitter and a single
-    receiver port. Messages that are being modeled as being transmitted can
-    only be transmitted from the transmitter to the receiver port, but not in
-    the opposite direction. At any one time at most one message can be
-    transmitted through a sublink. If the transmission of additional messages
-    is ordered through the sublink, then they will be queued.
+    Models a directional sublink of a Link.
+
+    Link instances are bidirectional and comprised of 2 _Sublinks each, one for
+    each direction. This means that _Sublinks are directional, i.e., they have
+    a single transmitter and a single receiver port. Messages that are being
+    modeled as being transmitted can only be transmitted from the transmitter
+    to the receiver port, but not in the opposite direction. At any one time at
+    most one message can be transmitted through a _Sublink. If the transmission
+    of additional messages is ordered through the _Sublink, then they will be
+    queued.
 
     """
     def __init__(
@@ -174,7 +218,8 @@ class _Sublink:
         Create a new instance of class _Sublink.
 
         Arguments:
-            link: the link that the sublink instance is a part of.
+            env: A simpy.Environment instance.
+            link: The link that the _Sublink instance is a part of.
             transmitter_port: An instance of Port that will be attached to
                 the link instance as the transmitter.
             receiver_port: An instance of Port that will be attached to
@@ -445,6 +490,11 @@ class MessagePlaybackDevice(NetworkDevice):
 
 class MessagePlaybackAndRecordingDevice(
         MessagePlaybackDevice, MessageRecordingDevice):
+    """
+    Models network devices that both transmit pre-specified messages and record
+    messages.
+
+    """
 
     def __init__(self, env, name, num_ports):
         MessagePlaybackDevice.__init__(self, env, name, num_ports)
@@ -454,7 +504,7 @@ class MessagePlaybackAndRecordingDevice(
 
 class Switch(NetworkDevice):
     """
-    Class whose instances model standard Ethernet switches.
+    Models standard Ethernet switches.
 
     """
 
