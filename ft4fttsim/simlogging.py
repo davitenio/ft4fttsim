@@ -41,7 +41,7 @@ import logging
 env = None  # pylint: disable-msg=C0103
 
 
-class SimLoggerAdapter(logging.LoggerAdapter):
+class _SimLoggerAdapter(logging.LoggerAdapter):
     """
     Class used to prefix the simulated time to the logging entries.
 
@@ -59,5 +59,5 @@ logging.basicConfig(
     format="%(levelname)5s:%(filename)15s:%(lineno)5d: %(message)s")
 
 
-LOGGER = logging.getLogger('ft4fttsim')
-log = SimLoggerAdapter(LOGGER, {})  # pylint: disable-msg=C0103
+_LOGGER = logging.getLogger('ft4fttsim')
+log = _SimLoggerAdapter(_LOGGER, {})  # pylint: disable-msg=C0103
