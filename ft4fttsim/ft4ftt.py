@@ -104,8 +104,14 @@ class Master(NetworkDevice):
                 self.process_update_request_message(msg)
 
     def broadcast_trigger_message(self):
+        """
+        Broadcast the trigger message on all ports.
+
+        """
         log.debug("{} broadcasting trigger message".format(self))
         for port in self.ports:
+            # TODO: calculate a schedule to be transmitted in the trigger
+            # message.
             trigger_message = Message(self.env, self, self.slaves,
                                       ethernet.MAX_FRAME_SIZE_BYTES,
                                       MessageType.TRIGGER_MESSAGE)
@@ -160,6 +166,10 @@ class FT4FTTSwitch(NetworkDevice):
         env.process(self.listen_for_messages(self.process_received_messages))
 
     def flood_message(self, message):
+        """
+        Instruct the transmission of message on all external ports.
+
+        """
         for port in self.external_ports:
             self.env.process(
                 self.instruct_transmission(message, port))
