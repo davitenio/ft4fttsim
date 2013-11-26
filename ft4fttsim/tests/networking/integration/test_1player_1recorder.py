@@ -8,8 +8,11 @@ Test the following network:
 
 """
 
-from ft4fttsim.networking import *
 import pytest
+
+from ft4fttsim.networking import Message, MessagePlaybackDevice
+from ft4fttsim.networking import MessageRecordingDevice, Link
+import ft4fttsim.ethernet as ethernet
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import LINK_CONFIGS
 
@@ -43,7 +46,7 @@ def test_first_message_played__arrives_when_expected(
     """
     def transmission_delay(message, link):
         bytes_transmitted = (
-            Ethernet.PREAMBLE_SIZE_BYTES + Ethernet.SFD_SIZE_BYTES +
+            ethernet.PREAMBLE_SIZE_BYTES + ethernet.SFD_SIZE_BYTES +
             message.size_bytes)
         bits_transmitted = bytes_transmitted * BITS_PER_BYTE
         # transmission delay in microseconds
@@ -60,8 +63,8 @@ def test_first_message_played__arrives_when_expected(
     assert recorder1.recorded_timestamps[0] == expected_timestamp
 
 
-IFG = Ethernet.IFG_SIZE_BYTES
-PS = Ethernet.PREAMBLE_SIZE_BYTES + Ethernet.SFD_SIZE_BYTES
+IFG = ethernet.IFG_SIZE_BYTES
+PS = ethernet.PREAMBLE_SIZE_BYTES + ethernet.SFD_SIZE_BYTES
 
 
 @pytest.mark.parametrize(

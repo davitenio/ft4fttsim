@@ -1,9 +1,9 @@
 # author: David Gessner <davidges@gmail.com>
 
 import pytest
-from ft4fttsim.networking import Message, Ethernet
+from ft4fttsim.networking import Message
 from ft4fttsim.exceptions import FT4FTTSimException
-from unittest.mock import sentinel, Mock
+from unittest.mock import sentinel
 
 
 MINIMUM_ETHERNET_FRAME_SIZE = 64
@@ -58,32 +58,32 @@ def test_message_constructor_raises_exception(env, size_in_bytes):
 
 def test_message_created__returns_expected_destination(env):
     message = Message(env, sentinel.source, sentinel.destinations,
-                      Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type)
+                      1234, sentinel.message_type)
     assert message.destination == sentinel.destinations
 
 
 def test_message_created__returns_expected_source(env):
     message = Message(env, sentinel.source, sentinel.destinations,
-                      Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type)
+                      1234, sentinel.message_type)
     assert message.source == sentinel.source
 
 
 def test_messages_with_same_data_are_equal(env):
     message1 = Message(env, sentinel.source, sentinel.destinations,
-                       Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type,
+                       1234, sentinel.message_type,
                        sentinel.dummy_data)
     message2 = Message(env, sentinel.source, sentinel.destinations,
-                       Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type,
+                       1234, sentinel.message_type,
                        sentinel.dummy_data)
     assert message1 == message2
 
 
 def test_messages_with_different_data_are_not_equal(env):
     message1 = Message(env, sentinel.source, sentinel.destinations,
-                       Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type,
+                       1234, sentinel.message_type,
                        sentinel.dummy_data)
     message2 = Message(env, sentinel.source, sentinel.destinations,
-                       Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type,
+                       1234, sentinel.message_type,
                        sentinel.different_dummy_data)
     assert message1 != message2
 
@@ -91,7 +91,7 @@ def test_messages_with_different_data_are_not_equal(env):
 def test_creating_message_from_template_creates_equal_message(env):
     template_message = Message(
         env, sentinel.source, sentinel.destinations,
-        Ethernet.MAX_FRAME_SIZE_BYTES, sentinel.message_type,
+        1234, sentinel.message_type,
         sentinel.dummy_data)
     new_message = Message.from_message(template_message)
     assert template_message == new_message

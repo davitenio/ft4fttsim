@@ -1,8 +1,10 @@
 # author: David Gessner <davidges@gmail.com>
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import sentinel, Mock
-from ft4fttsim.networking import *
+
+from ft4fttsim.networking import Link, NetworkDevice, Port
 
 
 @pytest.fixture

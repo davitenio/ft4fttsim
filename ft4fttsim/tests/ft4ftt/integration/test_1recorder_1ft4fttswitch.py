@@ -13,26 +13,25 @@ Perform tests under the following network:
 """
 
 import pytest
-from ft4fttsim.ft4ftt import Master, SyncStreamConfig
-from ft4fttsim.networking import Message
+
+from ft4fttsim.ft4ftt import Link, FT4FTTSwitch
 
 
 @pytest.fixture
 def switch(env, master, recorder):
-    from ft4fttsim.ft4ftt import FT4FTTSwitch
-    from ft4fttsim.networking import Link
     new_switch = FT4FTTSwitch(env, "FT4FTT switch", 1, master)
     Link(env, recorder.ports[0], new_switch.ports[0], 100, 5)
     return new_switch
 
 
-@pytest.mark.parametrize("num_ECs", range(1, 4))
-def test_num_ECs_simulated__record_correct_number_of_messages(
-        env, switch, recorder, num_ECs):
+@pytest.mark.parametrize("num_ecs", range(1, 4))
+def test_num_ecs_simulated__record_correct_number_of_messages(
+        env, switch, recorder, num_ecs):
     """
-    Test that the recorder records master.num_TMs_per_EC trigger messages in
+    Test that the recorder records master.num_tms_per_ec trigger messages in
     each elementary cycle.
+
     """
-    env.run(until=num_ECs * switch.master.EC_duration_us)
+    env.run(until=num_ecs * switch.master.ec_duration_us)
     received_messages = recorder.recorded_messages
-    assert len(received_messages) == num_ECs * switch.master.num_TMs_per_EC
+    assert len(received_messages) == num_ecs * switch.master.num_tms_per_ec

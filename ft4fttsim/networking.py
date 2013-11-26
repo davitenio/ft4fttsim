@@ -1,88 +1,65 @@
 # author: David Gessner <davidges@gmail.com>
+"""
+This module provides classes to define a simulated ethernet network.
 
+"""
 
-import simpy
-from ft4fttsim.exceptions import FT4FTTSimException
-from ft4fttsim.simlogging import log
 import collections
 
+import simpy
 
-class Ethernet:
-    # All lengths are indicated in bytes
-
-    # Ethernet IEEE 802.3 preamble length
-    PREAMBLE_SIZE_BYTES = 7
-    # Ethernet IEEE 802.3 start of frame delimiter length
-    SFD_SIZE_BYTES = 1
-    # Length of a source or destination address field
-    MAC_ADDRESS_SIZE_BYTES = 6
-    # Length of the ethertype field
-    ETHERTYPE_SIZE_BYTES = 2
-    # Length of the frame check sequence
-    FCS_SIZE_BYTES = 4
-    # Ethernet interframe gap length
-    IFG_SIZE_BYTES = 12
-    # minimum payload length
-    MIN_PAYLOAD_SIZE_BYTES = 46
-    # minimum frame length
-    MIN_FRAME_SIZE_BYTES = (
-        2 * MAC_ADDRESS_SIZE_BYTES + ETHERTYPE_SIZE_BYTES +
-        MIN_PAYLOAD_SIZE_BYTES + FCS_SIZE_BYTES)
-    # maximum payload length
-    MAX_PAYLOAD_SIZE_BYTES = 1500
-    # maximum frame length
-    MAX_FRAME_SIZE_BYTES = (
-        2 * MAC_ADDRESS_SIZE_BYTES + ETHERTYPE_SIZE_BYTES +
-        MAX_PAYLOAD_SIZE_BYTES + FCS_SIZE_BYTES)
+import ft4fttsim.ethernet as ethernet
+from ft4fttsim.exceptions import FT4FTTSimException
+from ft4fttsim.simlogging import log
 
 
-class Port:
+class Port(object):
     """
-    Instances of this class model physical Ethernet ports. Instances of the
-    class NetworkDevice can have several such ports, and to each one of them an
-    instance of Link can be attached.
+    Models physical Ethernet ports.
+
+    Instances of class NetworkDevice can have several such ports, and to each
+    one of them an instance of Link can be attached.
+
+    Each port has an input queue and an output queue. The input queue is where
+    messages that are received through the port are queued. The output queue is
+    where messages that are to be transmitted through the port are queued.
+
+    Input queues are modeled as simpy stores with infinite capacity. The
+    waiting time in an input queue is therefore always zero for any message.
+    That is, a message received in an input queue does not suffer any queuing
+    delay. Output queues, on the other hand, are modeled by a simpy store with
+    capacity 1. This means that messages transmitted through the output queue
+    may suffer a queuing delay.
 
     """
 
-    class InputQueue(simpy.Store):
+    def __init__(self, env, name):
+        """
+        Constructor for Port instances.
 
-        def __init__(self, env, device):
-            simpy.Store.__init__(self, env)
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the Port instance.
 
-        def __repr__(self):
-            return "{}-inQ".format(self.device)
-
-    class OutputQueue(simpy.Store):
-
-        def __init__(self, env, device):
-            simpy.Store.__init__(self, env, capacity=1)
-            self.device = device
-
-        def __repr__(self):
-            return "{}-outQ{}".format(self.device, id(self))
-
-    def __init__(self, env, device):
-        self.in_queue = Port.InputQueue(env, device)
-        self.out_queue = Port.OutputQueue(env, device)
-        self.device = device
+        """
+        self.in_queue = simpy.Store(env)
+        self.out_queue = simpy.Store(env, capacity=1)
         # indicates whether the port is already connected to a link
         self.is_free = True
-        previous_ports = getattr(device, "ports", [])
-        # Used within __repr__
-        self.port_number = len(previous_ports)
+        self.name = name
 
     def __repr__(self):
-        return "{}-port{}".format(self.device, self.port_number)
+        return self.name
 
 
-class Link:
+class Link(object):
     """
-    Class whose instances model links used in an Ethernet network.
+    Models links used in an Ethernet network.
 
-    A Link object models a physical link between at most 2 network devices
-    (objects of class NetworkDevice). A Link object has a certain transmission
-    speed (expressed in megabits per second) and propagation delay (expressed
-    in microseconds).
+    A Link object models a bidirectional physical link between exactly 2
+    network device ports (objects of class Port). A Link object has a certain
+    transmission speed (expressed in megabits per second) and propagation delay
+    (expressed in microseconds).
 
     """
     def __init__(
@@ -93,10 +70,12 @@ class Link:
         Create a new instance of class Link.
 
         Arguments:
-            port1: An instance of Port that will be attached to the link
-                instance.
-            port2: An instance of Port that will be attached to the link
-                instance.
+            env: A simpy.Environment instance.
+            port1: An instance of Port to which the link will be connected. It
+                models the port at one extreme of the modeled link.
+            port2: Another instance of Port to which the link will be
+                connected. It models the port at the other extreme of the
+                modeled link.
             megabits_per_second: Speed of the link in megabits per second.
             propagation_delay_us: Propagation delay of the link in
                 microseconds.
@@ -131,9 +110,17 @@ class Link:
 
     def transmission_time_us(self, num_bytes):
         """
-        Return the number of microseconds that it would take a transmitter to
-        transmit num_bytes on the link instance. This is the time from when the
-        first bit until the last bit has left the transmitter.
+        Gives the time in microseconds to transmit num_bytes on the link.
+
+        Arguments:
+            num_bytes: The number of bytes we want to know the transmission
+                time for.
+
+        Returns:
+            A floating-point number representing the number of microseconds
+            that it would take a Port attached to the link to transmit
+            num_bytes, counting from when the first bit until the last bit has
+            left the Port.
 
         Example:
 
@@ -148,20 +135,24 @@ class Link:
         122.08
 
         """
-        BITS_PER_BYTE = 8
-        bits_to_transmit = num_bytes * BITS_PER_BYTE
+        bits_to_transmit = num_bytes * 8
         transmission_time_us = (bits_to_transmit / self.megabits_per_second)
         return transmission_time_us
 
 
-class _Sublink:
+class _Sublink(object):
     """
-    Sublinks are directional, i.e., they have a single transmitter and a single
-    receiver port. Messages that are being modeled as being transmitted can
-    only be transmitted from the transmitter to the receiver port, but not in
-    the opposite direction. At any one time at most one message can be
-    transmitted through a sublink. If the transmission of additional messages
-    is ordered through the sublink, then they will be queued.
+    Models a directional sublink of a Link.
+
+    Link instances are comprised of 2 _Sublinks each, one for each direction.
+    This means that _Sublinks are directional, i.e., they have a single
+    transmitter and a single receiver port. Messages that are being modeled as
+    being transmitted can only be transmitted from the transmitter to the
+    receiver port, but not in the opposite direction. At any one time at most
+    one message can be transmitted through a _Sublink. If the transmission of
+    additional messages is ordered through the _Sublink when it already
+    contains a message, then the additional messages will be queued in the
+    output queue of the transmitter port of that _Sublink.
 
     """
     def __init__(
@@ -171,7 +162,8 @@ class _Sublink:
         Create a new instance of class _Sublink.
 
         Arguments:
-            link: the link that the sublink instance is a part of.
+            env: A simpy.Environment instance.
+            link: The link that the _Sublink instance is a part of.
             transmitter_port: An instance of Port that will be attached to
                 the link instance as the transmitter.
             receiver_port: An instance of Port that will be attached to
@@ -186,40 +178,19 @@ class _Sublink:
 
     @property
     def transmitter_port(self):
+        """
+        The port that is at the transmitting end of the _Sublink.
+
+        """
         return self._transmitter_port
-
-    @transmitter_port.setter
-    def transmitter_port(self, port):
-        """
-        Set the port that will be transmitting through the sublink instance.
-
-        Arguments:
-            port: The port of the NetworkDevice instance to be set as the
-                transmitter port for the sublink.
-
-        """
-        if self._transmitter_port is not None:
-            raise FT4FTTSimException("Sublink already has a transmitter.")
-        self._transmitter_port = port
 
     @property
     def receiver_port(self):
+        """
+        The port that is at the receiving end of the _Sublink.
+
+        """
         return self._receiver_port
-
-    @receiver_port.setter
-    def receiver_port(self, port):
-        """
-        Set the port that will be receiving the traffic through the sublink
-        instance.
-
-        Arguments:
-            port: The port of the NetworkDevice instance to be set as the
-                receiver port for the sublink.
-
-        """
-        if self._receiver_port is not None:
-            raise FT4FTTSimException("Sublink already has a receiver.")
-        self._receiver_port = port
 
     def run(self):
         """
@@ -227,13 +198,13 @@ class _Sublink:
 
         """
         while True:
-            new_message_request = self.transmitter_port.out_queue.get()
-            message = yield new_message_request
+            get_request = self.transmitter_port.out_queue.get()
+            message = yield get_request
             log.debug("{} transmission of {} started".format(self, message))
-            # wait for the transmission + propagation time to elapse
-            bytes_to_transmit = (Ethernet.PREAMBLE_SIZE_BYTES +
-                                 Ethernet.SFD_SIZE_BYTES +
+            bytes_to_transmit = (ethernet.PREAMBLE_SIZE_BYTES +
+                                 ethernet.SFD_SIZE_BYTES +
                                  message.size_bytes)
+            # wait for the transmission + propagation time to elapse
             yield self.env.timeout(
                 self.link.transmission_time_us(bytes_to_transmit) +
                 self.link.propagation_delay_us)
@@ -241,29 +212,76 @@ class _Sublink:
             self.receiver_port.in_queue.put(message)
             # wait for the duration of the ethernet interframe gap to elapse
             yield self.env.timeout(
-                self.link.transmission_time_us(Ethernet.IFG_SIZE_BYTES))
+                self.link.transmission_time_us(ethernet.IFG_SIZE_BYTES))
             log.debug("{} inter frame gap finished".format(self))
 
     def __repr__(self):
-        return "{}->{}".format(self._transmitter_port, self._receiver_port)
+        return "{}->{}".format(self.transmitter_port, self.receiver_port)
 
     def __str__(self):
-        return "{}->{}".format(self._transmitter_port, self._receiver_port)
+        return "{}->{}".format(self.transmitter_port, self.receiver_port)
 
 
-class NetworkDevice:
+class NetworkDevice(object):
+    """
+    Models generic network devices.
+
+    A NetworkDevice instance models a generic network device with a certain
+    number of ethernet ports. Network devices can be interconnected by means of
+    links attached to their ports:
+
+    >>> env = simpy.Environment()
+    >>> d = NetworkDevice(env, "some device", 1)
+    >>> d2 = NetworkDevice(env, "another device", 1)
+    >>> L = Link(env, d.ports[0], d2.ports[0], 100, 3)
+
+    The main purpose of this class is to serve as the superclass for specific
+    network devices such as Switch, MessagePlaybackDevice,
+    MessageRecordingDevice, etc.
+
+    """
 
     def __init__(self, env, name, num_ports):
+        """
+        Constructor for NetworkDevice instances.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the NetworkDevice instance.
+            num_ports: The number of ports that the NetworkDevice instance
+                should have.
+
+        """
         self.env = env
-        self.ports = [Port(self.env, self)
+        self.ports = [Port(self.env, "{}-port{}".format(name, i))
                       for i in range(num_ports)]
         self.name = name
 
     def listen_for_messages(self, callback):
         """
-        Wait for the reception of messages on all ports and, once messages are
-        received, invoke the callback function passing the received messages as
-        a parameter.
+        Simpy process that calls callback when messages are received.
+
+        Arguments:
+            callback: The function to be called when one or more messages are
+                received. The function should accept a single parameter that is
+                the list of received messages.
+
+        Note that a simpy process is a generator function (a.k.a., co-routine).
+        It should therefore not be called directly. Instead, it should be
+        registered with a simpy environment using simpy.Environment().process
+
+        Example:
+
+        >>> class MyNetworkDevice(NetworkDevice):
+        ...     def __init__(self, env, name, num_ports):
+        ...         NetworkDevice.__init__(self, env, name, num_ports)
+        ...         env.process(self.listen_for_messages(self.hello))
+        ...     def hello(self, messages):
+        ...         for msg in messages:
+        ...             print("Hello message {}".format(msg))
+        ...
+        >>> env = simpy.Environment()
+        >>> d = MyNetworkDevice(env, "some device", 1)
 
         """
         # generate get requests for all input queues
@@ -299,9 +317,18 @@ class NetworkDevice:
 
     def instruct_transmission(self, message, port):
         """
-        Note that this is a generator function. It should not be called
-        directly, but only as a parameter to the process() method of a simpy
-        Environment instance.
+        Simpy process that transmits a given message through a given port.
+
+        Arguments:
+            message: Message instance to be transmitted.
+            port: Port of self through which to transmit the message.
+
+        Raises:
+            FT4FTTSimException if port is not an element of self.ports.
+
+        Note that instruct_transmission() is a generator function. It should
+        not be called directly, but only passed as a parameter to the process()
+        method of a simpy Environment instance.
 
         Example:
 
@@ -324,6 +351,10 @@ class NetworkDevice:
 
     @property
     def input_queues(self):
+        """
+        Returns a list of all the input queues of the NetworkDevice instance.
+
+        """
         return [port.in_queue for port in self.ports]
 
     def __str__(self):
@@ -334,41 +365,76 @@ class NetworkDevice:
 
 
 class EchoDevice(NetworkDevice):
+    """
+    Models a device that retransmits any message it receives.
+
+    Instances of this class are mainly used for testing purposes.
+
+    """
 
     def __init__(self, env, name):
+        """
+        Creates a new EchoDevice instance.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the EchoDevice instance.
+
+        """
         NetworkDevice.__init__(self, env, name, 1)
         self.env.process(self.listen_for_messages(self.echo))
 
     def echo(self, messages):
-        for m in messages:
-            self.env.process(self.instruct_transmission(m, self.ports[0]))
+        """
+        Transmits messages through port number 0 of self.
+
+        Arguments:
+            messages: An iterable of the messages to transmit.
+
+        """
+        for msg in messages:
+            self.env.process(self.instruct_transmission(msg, self.ports[0]))
 
 
 class MessageRecordingDevice(NetworkDevice):
     """
-    Class whose instances model a passive receiver.
-
-    Instances of this class cannot transmit messages. All they do is wait for
-    the reception of a message on any one of their ports and record the
-    received message in an internal buffer together with a timestamp of the
-    reception time.
+    Models receivers that record and timestamp each received message.
 
     The main purpose of instances of this class is to make testing easier.
 
     """
 
     def __init__(self, env, name, num_ports):
+        """
+        Create a new MessageRecordingDevice instance.
+
+        Arguments:
+            env: A simpy.Environment instance.
+            name: A string used to identify the MessageRecordingDevice
+                instance.
+            num_ports: The number of ports that the MessageRecordingDevice
+                instance should have.
+
+        """
         NetworkDevice.__init__(self, env, name, num_ports)
         self.reception_records = {}
         self.env.process(self.listen_for_messages(self.do_timestamp_messages))
 
     def do_timestamp_messages(self, messages):
+        """
+        Timestamp each message in messages with the current time.
+
+        """
         timestamp = self.env.now
         self.reception_records[timestamp] = messages
         log.debug("{} recorded {}".format(self, self.reception_records))
 
     @property
     def recorded_messages(self):
+        """
+        Return the messages so far received by self.
+
+        """
         messages = []
         for time in sorted(self.reception_records):
             messages.extend(self.reception_records[time])
@@ -376,6 +442,12 @@ class MessageRecordingDevice(NetworkDevice):
 
     @property
     def recorded_timestamps(self):
+        """
+        Return list of instants of time when messages have been received.
+
+        The list is sorted from earlier time instants to later time instants.
+
+        """
         return sorted(self.reception_records.keys())
 
 
@@ -383,10 +455,9 @@ class MessagePlaybackDevice(NetworkDevice):
     """
     Instances of this class model devices that transmit prespecified messages.
 
-    Instances of this class cannot receive messages. What they do is accept a
-    series of transmission commands and then execute them. Each transmission
-    command specifies what message to transmit at what time and through which
-    port.
+    Instances of this class accept a series of transmission commands and then
+    execute them. Each transmission command specifies what message to transmit,
+    at what time, and through which port.
 
     The main purpose of instances of this class is to make testing easier.
 
@@ -424,6 +495,10 @@ class MessagePlaybackDevice(NetworkDevice):
             self, self.transmission_commands))
 
     def run(self):
+        """
+        Simpy process that executes previously loaded transmission commands.
+
+        """
         for time in sorted(self.transmission_commands):
             delay_before_next_tx_order = time - self.env.now
             log.debug("{} waiting for next transmission time".format(self))
@@ -437,11 +512,19 @@ class MessagePlaybackDevice(NetworkDevice):
 
     @property
     def transmission_start_times(self):
+        """
+        Returns a list of time instants when transmissions will be instructed.
+
+        """
         return sorted(self.transmission_commands.keys())
 
 
 class MessagePlaybackAndRecordingDevice(
         MessagePlaybackDevice, MessageRecordingDevice):
+    """
+    Models devices that transmit pre-specified messages and record messages.
+
+    """
 
     def __init__(self, env, name, num_ports):
         MessagePlaybackDevice.__init__(self, env, name, num_ports)
@@ -451,11 +534,11 @@ class MessagePlaybackAndRecordingDevice(
 
 class Switch(NetworkDevice):
     """
-    Class whose instances model standard Ethernet switches.
+    Models standard Ethernet switches.
 
     """
 
-    def __init__(self, env, name, num_ports, forwarding_table={}):
+    def __init__(self, env, name, num_ports, forwarding_table=None):
         """
         Creates a new Switch instance.
 
@@ -470,7 +553,10 @@ class Switch(NetworkDevice):
         """
         NetworkDevice.__init__(self, env, name, num_ports)
         env.process(self.listen_for_messages(self.forward_messages))
-        self.forwarding_table = forwarding_table
+        if forwarding_table is None:
+            self.forwarding_table = {}
+        else:
+            self.forwarding_table = forwarding_table
 
     def forward_messages(self, message_list):
         """
@@ -480,6 +566,7 @@ class Switch(NetworkDevice):
         implemented as creating a new message instance based on the message
         in the first port, and transmitting the new message instance on the
         second port.
+
         """
 
         def find_ports(destination):
@@ -516,13 +603,13 @@ class Switch(NetworkDevice):
                     self.instruct_transmission(new_message, port))
 
 
-class Message:
+class Message(object):
     """
     Class for messages that model Ethernet frames.
 
     """
-    # next available ID for message objects
-    next_ID = 0
+    # next available identifier for message objects
+    next_identifier = 0
 
     def __init__(
             self, env, source, destination, size_bytes, message_type,
@@ -549,15 +636,15 @@ class Message:
         """
         if not isinstance(size_bytes, int):
             raise FT4FTTSimException("Message size must be integer")
-        if not (Ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
-                Ethernet.MAX_FRAME_SIZE_BYTES):
+        if not (ethernet.MIN_FRAME_SIZE_BYTES <= size_bytes <=
+                ethernet.MAX_FRAME_SIZE_BYTES):
             raise FT4FTTSimException(
                 "Message size must be between {} and {}, but is {}".format(
-                Ethernet.MIN_FRAME_SIZE_BYTES, Ethernet.MAX_FRAME_SIZE_BYTES,
+                ethernet.MIN_FRAME_SIZE_BYTES, ethernet.MAX_FRAME_SIZE_BYTES,
                 size_bytes))
         self.env = env
-        self.ID = Message.next_ID
-        Message.next_ID += 1
+        self._identifier = Message.next_identifier
+        Message.next_identifier += 1
         # source of the message. Models the source MAC address.
         self.source = source
         # destination of the message. It models the destination MAC address. It
@@ -567,9 +654,17 @@ class Message:
         self.message_type = message_type
         self.data = data
         self.name = "({:03d}, {}, {}, {:d}, {}, {})".format(
-            self.ID, self.source, self.destination, self.size_bytes,
+            self.identifier, self.source, self.destination, self.size_bytes,
             self.message_type, self.data)
         log.debug("{} created".format(self))
+
+    @property
+    def identifier(self):
+        """
+        Integer that uniquely identifies the Message instance.
+
+        """
+        return self._identifier
 
     @classmethod
     def from_message(cls, template_message):
@@ -589,7 +684,7 @@ class Message:
     def __eq__(self, message):
         """
         Returns true if self and message are identical except for the message
-        ID.
+        identifier.
 
         """
         return (self.source == message.source and
