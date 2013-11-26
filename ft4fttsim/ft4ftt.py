@@ -47,7 +47,7 @@ class Master(NetworkDevice):
     """
 
     def __init__(
-            self, env, name, num_ports, slaves, elementary_cycle_us,
+            self, env, name, num_ports, slaves, ec_duration_us,
             num_tms_per_ec=1, sync_requirements=None):
         """
         Constructor for FTT masters.
@@ -58,7 +58,7 @@ class Master(NetworkDevice):
             num_ports: The number of ports that the new Master instance should
                 have.
             slaves: Slaves for which the master is responsible.
-            elementary_cycle_us: Duration of the elementary cycles in
+            ec_duration_us: Duration of the elementary cycles in
                 microseconds.
             num_tms_per_ec: Number of trigger messages to transmit per
                 elementary cycle.
@@ -71,7 +71,7 @@ class Master(NetworkDevice):
         NetworkDevice.__init__(self, env, name, num_ports)
         self.proc = env.process(self.run())
         self.slaves = slaves
-        self.ec_duration_us = elementary_cycle_us
+        self.ec_duration_us = ec_duration_us
         self.num_tms_per_ec = num_tms_per_ec
         if sync_requirements is None:
             self.sync_requirements = {}
