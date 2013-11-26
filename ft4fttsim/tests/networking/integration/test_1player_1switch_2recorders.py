@@ -15,11 +15,11 @@ Perform tests under the following network:
 import pytest
 
 from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.networking import Switch
 
 
 @pytest.fixture
 def switch_pr1(env, player_rec1, recorder1, recorder2):
-    from ft4fttsim.networking import Switch
     new_switch = Switch(env, "switch3", num_ports=3)
     make_link((1000, 123), env, player_rec1.ports[0], new_switch.ports[0])
     make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])
@@ -58,7 +58,6 @@ def test_no_message_is_received_by_recorder2(
 
 @pytest.fixture
 def switch_pr2(env, player_rec2, recorder1, recorder2):
-    from ft4fttsim.networking import Switch
     new_switch = Switch(env, "switch3", num_ports=3)
     make_link((1000, 123), env, player_rec2.ports[0], new_switch.ports[0])
     make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])
@@ -97,7 +96,6 @@ def test_no_message_is_received_by_recorder1(
 
 @pytest.fixture
 def switch_pr12(env, player_rec12, recorder1, recorder2):
-    from ft4fttsim.networking import Switch
     new_switch = Switch(env, "switch3", num_ports=3)
     make_link((1000, 123), env, player_rec12.ports[0], new_switch.ports[0])
     make_link((1000, 123), env, recorder1.ports[0], new_switch.ports[1])

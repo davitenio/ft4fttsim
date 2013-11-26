@@ -15,11 +15,11 @@ Execute tests under the following network:
 import pytest
 
 from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.networking import MessagePlaybackDevice, Message
 
 
 @pytest.fixture
 def player(env):
-    from ft4fttsim.networking import MessagePlaybackDevice
     player = MessagePlaybackDevice(env, "player", num_ports=2)
     return player
 
@@ -30,7 +30,6 @@ def player_diff(env, player, recorder1, recorder2):
     Set up player sending a separate message at a different instant of time
     to each recorder.
     """
-    from ft4fttsim.networking import Message
     tx_start_time1, tx_start_time2 = range(2)
     messages1 = [Message(env, player, recorder1, 543, "message for recorder1")]
     messages2 = [Message(env, player, recorder2, 453, "message for recorder2")]

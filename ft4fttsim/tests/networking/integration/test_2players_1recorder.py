@@ -22,6 +22,7 @@ import pytest
 from ft4fttsim.tests.networking.fixturehelper import PLAYBACK_CONFIGS
 from ft4fttsim.tests.networking.fixturehelper import make_playback_device
 from ft4fttsim.tests.networking.fixturehelper import make_link
+from ft4fttsim.networking import MessageRecordingDevice
 
 
 @pytest.fixture
@@ -30,7 +31,6 @@ def recorder(env):
     Create a MessageRecordingDevice instance with 2 ports.
 
     """
-    from ft4fttsim.networking import MessageRecordingDevice
     recorder = MessageRecordingDevice(env, "recorder", 2)
     return recorder
 

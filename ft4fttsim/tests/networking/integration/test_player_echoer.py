@@ -10,6 +10,7 @@ Test the following network:
 
 import pytest
 
+from ft4fttsim.networking import EchoDevice, MessagePlaybackAndRecordingDevice
 from ft4fttsim.tests.networking.fixturehelper import make_link
 from ft4fttsim.tests.networking.fixturehelper import make_playback_device
 from ft4fttsim.tests.networking.fixturehelper import PLAYBACK_CONFIGS
@@ -24,14 +25,12 @@ def link(env, request, player_recorder, echoer):
 
 @pytest.fixture
 def echoer(env):
-    from ft4fttsim.networking import EchoDevice
     echoer = EchoDevice(env, "echoer")
     return echoer
 
 
 @pytest.fixture(params=PLAYBACK_CONFIGS)
 def player_recorder(request, env, echoer):
-    from ft4fttsim.networking import MessagePlaybackAndRecordingDevice
     config = request.param
     new_playback_device = make_playback_device(
         config, env, echoer, "player/recorder",
