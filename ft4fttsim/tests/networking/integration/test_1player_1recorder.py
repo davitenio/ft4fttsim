@@ -69,12 +69,13 @@ PS = ethernet.PREAMBLE_SIZE_BYTES + ethernet.SFD_SIZE_BYTES
 
 @pytest.mark.parametrize(
     "Mbps,num_bytes,expected_timestamp",
-    [(100, 1518,
-        2 * (1518 + PS) * BITS_PER_BYTE / 100 + (IFG * BITS_PER_BYTE) / 100),
-    (10, 123,
-        2 * (123 + PS) * BITS_PER_BYTE / 10 + (IFG * BITS_PER_BYTE) / 10),
-    (1000, 64,
-        2 * (64 + PS) * BITS_PER_BYTE / 1000 + (IFG * BITS_PER_BYTE) / 1000)]
+    [
+        (100, 1518,
+         2 * (1518 + PS) * BITS_PER_BYTE / 100 + (IFG * BITS_PER_BYTE) / 100),
+        (10, 123,
+         2 * (123 + PS) * BITS_PER_BYTE / 10 + (IFG * BITS_PER_BYTE) / 10),
+        (1000, 64,
+         2 * (64 + PS) * BITS_PER_BYTE / 1000 + (IFG * BITS_PER_BYTE) / 1000)]
 )
 def test_interframe_gap(env, Mbps, num_bytes, expected_timestamp):
     """

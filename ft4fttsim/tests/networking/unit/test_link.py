@@ -58,7 +58,7 @@ def test_link_constructor_does_not_raise_exception(
 @pytest.mark.parametrize(
     "Mbps,num_bytes,expected_transmission_time",
     [(1, 1526, 12208), (10, 1526, 1220.8), (100, 1526, 122.08),
-    (1000, 1526, 12.208), (100, 0, 0)]
+     (1000, 1526, 12.208), (100, 0, 0)]
 )
 def test_link__transmission_time_us(
         env, port1, port2, Mbps, num_bytes, expected_transmission_time):
