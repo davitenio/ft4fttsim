@@ -640,8 +640,9 @@ class Message(object):
                 ethernet.MAX_FRAME_SIZE_BYTES):
             raise FT4FTTSimException(
                 "Message size must be between {} and {}, but is {}".format(
-		    ethernet.MIN_FRAME_SIZE_BYTES, ethernet.MAX_FRAME_SIZE_BYTES,
-		    size_bytes))
+                    ethernet.MIN_FRAME_SIZE_BYTES,
+                    ethernet.MAX_FRAME_SIZE_BYTES,
+                    size_bytes))
         self.env = env
         self._identifier = Message.next_identifier
         Message.next_identifier += 1
