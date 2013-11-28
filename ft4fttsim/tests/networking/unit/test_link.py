@@ -2,7 +2,9 @@
 
 import pytest
 from unittest.mock import Mock
+
 from ft4fttsim.networking import Link, Port
+import ft4fttsim.ethernet as ethernet
 from ft4fttsim.exceptions import FT4FTTSimException
 
 
@@ -57,8 +59,17 @@ def test_link_constructor_does_not_raise_exception(
 
 @pytest.mark.parametrize(
     "Mbps,num_bytes,expected_transmission_time",
-    [(1, 1526, 12208), (10, 1526, 1220.8), (100, 1526, 122.08),
-     (1000, 1526, 12.208), (100, 0, 0)]
+    [
+        (1, 1526, 12208), (10, 1526, 1220.8), (100, 1526, 122.08),
+        (1000, 1526, 12.208), (100, 0, 0),
+
+        (10, ethernet.MIN_FRAME_SIZE_BYTES, 51.2),
+        (100, ethernet.MIN_FRAME_SIZE_BYTES, 5.12),
+        (1000, ethernet.MIN_FRAME_SIZE_BYTES, 0.512),
+        (10, ethernet.MAX_FRAME_SIZE_BYTES, 1214.4),
+        (100, ethernet.MAX_FRAME_SIZE_BYTES, 121.44),
+        (1000, ethernet.MAX_FRAME_SIZE_BYTES, 12.144)
+    ]
 )
 def test_link__transmission_time_us(
         env, port1, port2, Mbps, num_bytes, expected_transmission_time):
